@@ -37,6 +37,20 @@ export async function getSessionForUser(sessionId: string, userId: string) {
   });
 }
 
+/**
+ * Completed, scored sessions for the cognitive-performance engine.
+ * Ordered oldest-last (newest first) and taken generously so the
+ * engine can window the most recent few per domain itself.
+ */
+export async function getCompletedScoredSessions(userId: string, take = 60) {
+  return prisma.gameSession.findMany({
+    where: { userId, status: "COMPLETED", result: { isNot: null } },
+    orderBy: { completedAt: "desc" },
+    take,
+    ...sessionWithResult,
+  });
+}
+
 /** Completed activities since midnight IST, used for the home dots. */
 export async function getTodaysCompletedCount(userId: string) {
   return prisma.gameSession.count({

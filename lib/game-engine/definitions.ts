@@ -166,11 +166,7 @@ export function roundCountFor(id: string, difficulty: Difficulty): number {
   return 1;
 }
 
-/**
- * Phase 1 default: start everyone gently unless they have chosen
- * otherwise in their preferences. Deterministic, and honest about
- * being a rule rather than a recommendation.
- */
-export function defaultDifficulty(preferred?: Difficulty | null): Difficulty {
-  return preferred ?? "EASY";
-}
+// Phase 1 shipped a static `defaultDifficulty()` here. Phase 2
+// replaced it with the history-driven recommendation in
+// lib/cognitive-performance (see getRecommendedDifficulty), so the
+// static version has been removed rather than left as dead code.

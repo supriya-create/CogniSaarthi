@@ -9,6 +9,8 @@ import { requireUser } from "@/lib/auth/current-user";
 import { getSessionForUser } from "@/lib/db/queries";
 import { getDefinition } from "@/lib/game-engine/definitions";
 import { toneFor } from "@/lib/game-engine/scoring";
+import { getDifficultyRecommendation } from "@/lib/cognitive-performance/profile";
+import { resultMessageKey } from "@/lib/cognitive-performance/recommendations";
 import { getDict } from "@/lib/i18n/dictionaries";
 import { difficultyLabel } from "@/lib/i18n/labels";
 
@@ -30,6 +32,24 @@ export default async function ResultPage({
 
   const totalCount = result.correctCount + result.incorrectCount;
 
+  // Phase 2: a short personalised line. The engine's recommendation
+  // (which reflects this session too) picks the tone — encouraging a
+  // strong run, gently reassuring a harder one — without ever
+  // exposing levels or internal reasoning to the person.
+  const recommendation = await getDifficultyRecommendation(
+    user.id,
+    session.gameId,
+  );
+  const personalMessage = recommendation
+    ? dict[
+        resultMessageKey({
+          score: result.score,
+          direction: recommendation.direction,
+          reason: recommendation.reason,
+        })
+      ]
+    : null;
+
   return (
     <PageShell header={<ElderlyHeader backHref="/home" backLabel={dict.home} />}>
       <p className="text-center text-lg font-medium text-text-muted">
@@ -48,7 +68,11 @@ export default async function ResultPage({
         />
       </div>
 
-      {result.score < 50 ? (
+      {personalMessage ? (
+        <p className="mt-6 text-center text-lg leading-relaxed text-text-muted">
+          {personalMessage}
+        </p>
+      ) : result.score < 50 ? (
         <p className="mt-6 text-center text-lg leading-relaxed text-text-muted">
           {dict.resultEncourage}
         </p>

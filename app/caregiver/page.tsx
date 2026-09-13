@@ -3,9 +3,12 @@ import { CalendarCheck, Gauge, ListChecks } from "lucide-react";
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
 import { SummaryTile } from "@/components/caregiver/SummaryTile";
 import { RecentSessionRow } from "@/components/caregiver/RecentSessionRow";
+import { CognitivePerformancePanel } from "@/components/caregiver/CognitivePerformancePanel";
+import { PersonalisationExplainer } from "@/components/caregiver/PersonalisationExplainer";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { requireCaregiver } from "@/lib/auth/current-user";
 import { getCaregiverOverview, DAILY_GOAL } from "@/lib/db/queries";
+import { getCognitiveProfile } from "@/lib/cognitive-performance/profile";
 import { getDefinition } from "@/lib/game-engine/definitions";
 import { SignOutButton } from "./SignOutButton";
 
@@ -26,6 +29,10 @@ export default async function CaregiverDashboard() {
 
   const { user, sessions, completedToday, totalCompleted, averageScore } =
     overview;
+
+  // Phase 2: per-domain performance, trends and the reason behind
+  // each difficulty choice.
+  const cognitiveProfile = await getCognitiveProfile(user.id);
 
   const latest = sessions.find((session) => session.result !== null);
   const latestName = latest
@@ -75,6 +82,11 @@ export default async function CaregiverDashboard() {
         />
       </div>
 
+      <CognitivePerformancePanel
+        profiles={cognitiveProfile}
+        userName={user.name}
+      />
+
       <section className="mt-9">
         <h2 className="font-serif text-2xl font-semibold">Recent activities</h2>
 
@@ -122,6 +134,8 @@ export default async function CaregiverDashboard() {
           </div>
         )}
       </section>
+
+      <PersonalisationExplainer />
 
       {/* An explicit boundary on what this data is and is not. */}
       <p className="mt-8 max-w-2xl text-base leading-relaxed text-text-muted">

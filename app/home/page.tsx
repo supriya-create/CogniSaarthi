@@ -1,45 +1,36 @@
-import { Bell, Brain, CircleCheck, Heart, Mic, Play } from "lucide-react";
+import { Bell, Brain, CircleCheck, Heart, Mic } from "lucide-react";
 
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageShell } from "@/components/layout/PageShell";
-import { LinkButton } from "@/components/ui/Button";
 import { ProgressDots } from "@/components/elderly/ProgressDots";
 import { QuickAction } from "@/components/elderly/QuickAction";
+import { TodaysJourney } from "@/components/elderly/TodaysJourney";
 import { requireUser } from "@/lib/auth/current-user";
 import {
   DAILY_GOAL,
   getGameIdsCompletedToday,
   getTodaysCompletedCount,
 } from "@/lib/db/queries";
+import { getDailyJourney } from "@/lib/cognitive-performance/profile";
 import { getDict } from "@/lib/i18n/dictionaries";
-import { GAME_DEFINITIONS } from "@/lib/game-engine/definitions";
 import { greetingKey } from "@/lib/utils/date";
 
 export default async function HomePage() {
   const user = await requireUser();
-  const dict = getDict(user.preference?.language ?? user.language);
+  const language = user.preference?.language ?? user.language;
+  const dict = getDict(language);
 
-  const [completedToday, playedToday] = await Promise.all([
+  // Phase 2: the home screen leads with a personalised plan built
+  // from the person's history. The journey orders activities weakest
+  // area first; each opens at a level the engine chose for them.
+  const [completedToday, playedToday, journey] = await Promise.all([
     getTodaysCompletedCount(user.id),
     getGameIdsCompletedToday(user.id),
+    getDailyJourney(user.id),
   ]);
 
-  // "Today's activity" is the first activity not yet finished today.
-  // A plain rule, applied the same way every day — not a suggestion
-  // dressed up as a recommendation.
-  const nextGame =
-    GAME_DEFINITIONS.find((game) => !playedToday.has(game.id)) ??
-    GAME_DEFINITIONS[0];
-
-  const hasStarted = completedToday > 0;
   const goalMet = completedToday >= DAILY_GOAL;
-
-  const primaryLabel = goalMet
-    ? dict.playAnother
-    : hasStarted
-      ? dict.continueActivity
-      : dict.startTodaysActivity;
 
   return (
     <PageShell header={<ElderlyHeader />} nav={<BottomNav dict={dict} />}>
@@ -50,16 +41,14 @@ export default async function HomePage() {
         <p className="mt-3 text-xl text-text-muted">{dict.homeInvite}</p>
       </section>
 
-      <section className="mt-8">
-        <LinkButton
-          href={`/games/${nextGame.id}`}
-          fullWidth
-          icon={<Play className="size-7 shrink-0" aria-hidden />}
-          className="py-6 text-2xl"
-        >
-          {primaryLabel}
-        </LinkButton>
-      </section>
+      <div className="mt-8">
+        <TodaysJourney
+          journey={journey}
+          completedGameIds={playedToday}
+          language={language}
+          dict={dict}
+        />
+      </div>
 
       <section
         className={`mt-8 rounded-2xl border p-5 shadow-soft ${
@@ -80,8 +69,6 @@ export default async function HomePage() {
           />
         </div>
 
-        {/* Finishing the day is worth saying out loud, not just
-            filling in a third dot. */}
         {goalMet ? (
           <p className="mt-2 flex items-start gap-2 text-lg font-medium text-success">
             <CircleCheck className="mt-1 size-5 shrink-0" aria-hidden />
