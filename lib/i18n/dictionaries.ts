@@ -1,0 +1,462 @@
+import type { Language } from "@prisma/client";
+
+/**
+ * Phase 1 localisation.
+ *
+ * These are real, hand-written translations for the interface
+ * chrome — not machine output presented as a feature. Game content
+ * labels live alongside the content bank in lib/game-engine/content.
+ *
+ * Anything not yet translated falls back to English rather than
+ * rendering an empty string, so a partial dictionary is safe.
+ */
+
+export const LANGUAGES = [
+  { code: "EN", label: "English", nativeLabel: "English" },
+  { code: "HI", label: "Hindi", nativeLabel: "हिन्दी" },
+  { code: "AS", label: "Assamese", nativeLabel: "অসমীয়া" },
+] as const satisfies ReadonlyArray<{
+  code: Language;
+  label: string;
+  nativeLabel: string;
+}>;
+
+const en = {
+  appName: "Cognisaarthi",
+  tagline: "Your friendly companion for everyday memory and brain activities.",
+
+  // --- shared actions ---
+  back: "Back",
+  next: "Next",
+  start: "Start",
+  continueLabel: "Continue",
+  save: "Save",
+  saved: "Saved",
+  cancel: "Cancel",
+  tryAgain: "Try again",
+  done: "Done",
+  home: "Home",
+  loading: "Just a moment…",
+  comingSoon: "Coming soon",
+  skipToContent: "Skip to the main content",
+  unitMinute: "min",
+  unitSecond: "sec",
+  ofTotal: "of",
+
+  // --- onboarding ---
+  onboardWelcomeTitle: "Welcome to Cognisaarthi",
+  onboardNameTitle: "What should we call you?",
+  onboardNameHelp: "We will use this to greet you each day.",
+  onboardNamePlaceholder: "Your name",
+  onboardNameError: "Please tell us your name so we can greet you.",
+  onboardLanguageTitle: "Which language would you prefer?",
+  onboardLanguageHelp: "You can change this later.",
+  onboardReadyTitle: "Ready to begin?",
+  onboardReadyBody: "We will start with one short activity. There is no rush.",
+  onboardStepLabel: "Step",
+  onboardOf: "of",
+
+  // --- home ---
+  greetingMorning: "Good morning",
+  greetingAfternoon: "Good afternoon",
+  greetingEvening: "Good evening",
+  homeInvite: "Let's spend a few minutes together.",
+  startTodaysActivity: "Start today's activity",
+  continueActivity: "Continue today's activity",
+  todaysProgress: "Today's progress",
+  homeGoalMet: "You have done all three activities today.",
+  playAnother: "Play another activity",
+  progressOf: "activities done today",
+  quickActions: "Quick actions",
+  navGames: "Games",
+  navMemories: "Memories",
+  navReminders: "Reminders",
+  navTalk: "Talk to Cognisaarthi",
+  navHistory: "My activities",
+  navProfile: "My profile",
+
+  // --- games ---
+  domainSHORT_TERM_MEMORY: "Memory",
+  domainATTENTION: "Attention",
+  domainWORKING_MEMORY: "Working memory",
+
+  gamesTitle: "Choose an activity",
+  gamesSubtitle: "Each one takes just a few minutes.",
+  chooseDifficulty: "How would you like to play?",
+  difficultyEasy: "Easy",
+  difficultyMedium: "Medium",
+  difficultyHard: "Hard",
+  difficultyEasyHelp: "A gentle start",
+  difficultyMediumHelp: "A little more to remember",
+  difficultyHardHelp: "The biggest challenge",
+  howToPlay: "How to play",
+  beginActivity: "Begin",
+  round: "Round",
+  memorise: "Look carefully",
+  timeLeft: "Time left",
+  seconds: "seconds",
+  rememberObjectsPrompt: "Which objects did you remember?",
+  findDifferentPrompt: "Which one is different?",
+  sequenceWatchPrompt: "Watch the order",
+  sequenceAnswerPrompt: "Now tap them in the same order",
+  sequenceYourAnswer: "Your answer so far",
+  correct: "Correct",
+  notQuite: "Not quite",
+  yourTurn: "Your turn",
+  tapToAnswer: "Tap your answer",
+  checkAnswer: "Check my answer",
+  clearSelection: "Clear",
+  quitActivity: "Stop activity",
+
+  // --- results ---
+  resultWonderful: "Wonderful!",
+  resultWellDone: "Well done!",
+  resultNiceWork: "Nice work!",
+  resultGoodTry: "Good try!",
+  resultEncourage: "Every attempt helps. Let's try once more together.",
+  resultPlayAgain: "Play again",
+  resultBackHome: "Back home",
+  resultAnotherQuestion: "Would you like to play another activity?",
+  resultSummary: "You got {correct} out of {total} right.",
+  resultLevel: "Level",
+  resultStarsLabel: "Your stars",
+  resultTimeTaken: "Time taken",
+  resultAccuracy: "Answers correct",
+
+  // --- history ---
+  historyTitle: "My activities",
+  historySubtitle: "A gentle record of what you have played.",
+  historyToday: "Today",
+  historyEarlier: "Earlier",
+  historyEmpty: "You have not played anything yet.",
+  historyEmptyAction: "Start your first activity",
+  historyCompleted: "Completed",
+  historyUnfinished: "Not finished",
+  historyScore: "Score",
+
+  // --- profile ---
+  profileTitle: "My profile",
+  profileName: "My name",
+  profileLanguage: "Language",
+  profileTextSize: "Text size",
+  profileAvatar: "My picture",
+  profileCaregiver: "My caregiver",
+  profileCaregiverConnected: "Connected",
+  profileCaregiverNone: "No caregiver connected yet",
+  profileConnectCode: "Your connection code",
+  profileConnectCodeHelp:
+    "Give this code to a family member. They can use it to follow your activities.",
+  textSizeComfortable: "Comfortable",
+  textSizeLarge: "Large",
+  textSizeExtraLarge: "Extra large",
+  profileSaveChanges: "Save changes",
+  profileSwitchUser: "Sign out",
+
+  // --- placeholders ---
+  memoriesTitle: "Memories",
+  memoriesBody:
+    "A place for your photographs and the people you love. We are still building this.",
+  remindersTitle: "Reminders",
+  remindersBody:
+    "Gentle nudges for your day. We are still building this.",
+  talkBody:
+    "Talking with Cognisaarthi out loud is not ready yet. It is coming in a later update.",
+
+  // --- errors & empty states ---
+  errorTitle: "Something went wrong.",
+  errorBody: "Let's try that again.",
+  notFoundTitle: "We could not find that page.",
+  notFoundBody: "Let's go back to somewhere familiar.",
+};
+
+/** Values are plain strings, so translations are assignable. */
+export type Dict = typeof en;
+
+const hi: Partial<Dict> = {
+  tagline: "रोज़मर्रा की याददाश्त और दिमागी गतिविधियों के लिए आपका साथी।",
+
+  back: "वापस",
+  next: "आगे",
+  start: "शुरू करें",
+  continueLabel: "जारी रखें",
+  save: "सहेजें",
+  saved: "सहेजा गया",
+  cancel: "रहने दें",
+  tryAgain: "फिर से कोशिश करें",
+  done: "हो गया",
+  home: "घर",
+  loading: "बस एक पल…",
+  comingSoon: "जल्द आ रहा है",
+  skipToContent: "मुख्य सामग्री पर जाएँ",
+  unitMinute: "मिनट",
+  unitSecond: "सेकंड",
+  ofTotal: "में से",
+
+  onboardWelcomeTitle: "कॉग्निसारथी में आपका स्वागत है",
+  onboardNameTitle: "हम आपको क्या कहकर बुलाएँ?",
+  onboardNameHelp: "हर दिन आपका अभिवादन करने के लिए।",
+  onboardNamePlaceholder: "आपका नाम",
+  onboardNameError: "कृपया अपना नाम बताइए।",
+  onboardLanguageTitle: "आप कौन सी भाषा पसंद करेंगे?",
+  onboardLanguageHelp: "आप इसे बाद में बदल सकते हैं।",
+  onboardReadyTitle: "शुरू करने के लिए तैयार हैं?",
+  onboardReadyBody: "हम एक छोटी गतिविधि से शुरू करेंगे। कोई जल्दी नहीं है।",
+  onboardStepLabel: "चरण",
+  onboardOf: "में से",
+
+  greetingMorning: "सुप्रभात",
+  greetingAfternoon: "नमस्कार",
+  greetingEvening: "शुभ संध्या",
+  homeInvite: "आइए कुछ पल साथ बिताएँ।",
+  startTodaysActivity: "आज की गतिविधि शुरू करें",
+  continueActivity: "आज की गतिविधि जारी रखें",
+  todaysProgress: "आज की प्रगति",
+  homeGoalMet: "आपने आज तीनों गतिविधियाँ पूरी कर लीं।",
+  playAnother: "एक और गतिविधि खेलें",
+  progressOf: "गतिविधियाँ आज पूरी हुईं",
+  quickActions: "जल्दी पहुँच",
+  navGames: "खेल",
+  navMemories: "यादें",
+  navReminders: "याद दिलाना",
+  navTalk: "कॉग्निसारथी से बात करें",
+  navHistory: "मेरी गतिविधियाँ",
+  navProfile: "मेरी जानकारी",
+
+  domainSHORT_TERM_MEMORY: "याददाश्त",
+  domainATTENTION: "ध्यान",
+  domainWORKING_MEMORY: "कार्यशील स्मृति",
+
+  gamesTitle: "एक गतिविधि चुनिए",
+  gamesSubtitle: "हर एक में बस कुछ ही मिनट लगते हैं।",
+  chooseDifficulty: "आप कैसे खेलना चाहेंगे?",
+  difficultyEasy: "आसान",
+  difficultyMedium: "मध्यम",
+  difficultyHard: "कठिन",
+  difficultyEasyHelp: "आराम से शुरुआत",
+  difficultyMediumHelp: "थोड़ा और याद रखना",
+  difficultyHardHelp: "सबसे बड़ी चुनौती",
+  howToPlay: "कैसे खेलें",
+  beginActivity: "शुरू करें",
+  round: "दौर",
+  memorise: "ध्यान से देखिए",
+  timeLeft: "बचा समय",
+  seconds: "सेकंड",
+  rememberObjectsPrompt: "आपको कौन सी चीज़ें याद हैं?",
+  findDifferentPrompt: "कौन सा अलग है?",
+  sequenceWatchPrompt: "क्रम देखिए",
+  sequenceAnswerPrompt: "अब उन्हें उसी क्रम में छुइए",
+  sequenceYourAnswer: "अब तक आपका उत्तर",
+  correct: "सही",
+  notQuite: "बिलकुल नहीं",
+  yourTurn: "अब आपकी बारी",
+  tapToAnswer: "अपना उत्तर छुइए",
+  checkAnswer: "उत्तर जाँचें",
+  clearSelection: "हटाएँ",
+  quitActivity: "गतिविधि रोकें",
+
+  resultWonderful: "बहुत बढ़िया!",
+  resultWellDone: "शाबाश!",
+  resultNiceWork: "अच्छा किया!",
+  resultGoodTry: "अच्छी कोशिश!",
+  resultEncourage: "हर कोशिश काम आती है। आइए एक बार और साथ में करें।",
+  resultPlayAgain: "फिर से खेलें",
+  resultBackHome: "घर वापस",
+  resultAnotherQuestion: "क्या आप एक और गतिविधि खेलना चाहेंगे?",
+  resultSummary: "आपने {total} में से {correct} सही किए।",
+  resultLevel: "स्तर",
+  resultStarsLabel: "आपके सितारे",
+  resultTimeTaken: "लगा समय",
+  resultAccuracy: "सही उत्तर",
+
+  historyTitle: "मेरी गतिविधियाँ",
+  historySubtitle: "आपने अब तक क्या-क्या खेला।",
+  historyToday: "आज",
+  historyEarlier: "पहले",
+  historyEmpty: "आपने अभी तक कुछ नहीं खेला है।",
+  historyEmptyAction: "पहली गतिविधि शुरू करें",
+  historyCompleted: "पूरा हुआ",
+  historyUnfinished: "पूरा नहीं हुआ",
+  historyScore: "अंक",
+
+  profileTitle: "मेरी जानकारी",
+  profileName: "मेरा नाम",
+  profileLanguage: "भाषा",
+  profileTextSize: "अक्षरों का आकार",
+  profileAvatar: "मेरी तस्वीर",
+  profileCaregiver: "मेरे देखभालकर्ता",
+  profileCaregiverConnected: "जुड़े हुए हैं",
+  profileCaregiverNone: "अभी कोई देखभालकर्ता नहीं जुड़ा",
+  profileConnectCode: "आपका कनेक्शन कोड",
+  profileConnectCodeHelp:
+    "यह कोड अपने परिवार के किसी सदस्य को दीजिए। इससे वे आपकी गतिविधियाँ देख सकेंगे।",
+  textSizeComfortable: "सामान्य",
+  textSizeLarge: "बड़ा",
+  textSizeExtraLarge: "सबसे बड़ा",
+  profileSaveChanges: "बदलाव सहेजें",
+  profileSwitchUser: "बाहर निकलें",
+
+  memoriesTitle: "यादें",
+  memoriesBody:
+    "आपकी तस्वीरों और अपनों के लिए एक जगह। हम इसे अभी बना रहे हैं।",
+  remindersTitle: "याद दिलाना",
+  remindersBody: "आपके दिन के लिए हल्के इशारे। हम इसे अभी बना रहे हैं।",
+  talkBody:
+    "कॉग्निसारथी से बोलकर बात करना अभी तैयार नहीं है। यह आगे आने वाला है।",
+
+  errorTitle: "कुछ गड़बड़ हो गई।",
+  errorBody: "आइए फिर से कोशिश करें।",
+  notFoundTitle: "यह पन्ना नहीं मिला।",
+  notFoundBody: "आइए वापस चलते हैं।",
+};
+
+const as: Partial<Dict> = {
+  tagline: "আপোনাৰ দৈনন্দিন স্মৃতি আৰু মগজুৰ কামৰ বন্ধু।",
+
+  back: "উভতি যাওক",
+  next: "আগলৈ",
+  start: "আৰম্ভ কৰক",
+  continueLabel: "আগবাঢ়ক",
+  save: "সাঁচি থওক",
+  saved: "সাঁচি থোৱা হ'ল",
+  cancel: "বাদ দিয়ক",
+  tryAgain: "আকৌ চেষ্টা কৰক",
+  done: "হ'ল",
+  home: "ঘৰ",
+  loading: "এক মুহূৰ্ত…",
+  comingSoon: "সোনকালে আহিব",
+  skipToContent: "মূল অংশলৈ যাওক",
+  unitMinute: "মিনিট",
+  unitSecond: "ছেকেণ্ড",
+  ofTotal: "ৰ ভিতৰত",
+
+  onboardWelcomeTitle: "কগনিসাৰথীলৈ আদৰণি",
+  onboardNameTitle: "আমি আপোনাক কি মাতিম?",
+  onboardNameHelp: "প্ৰতিদিনে আপোনাক আদৰণি জনাবলৈ।",
+  onboardNamePlaceholder: "আপোনাৰ নাম",
+  onboardNameError: "অনুগ্ৰহ কৰি আপোনাৰ নামটো লিখক।",
+  onboardLanguageTitle: "আপুনি কোনটো ভাষা বিচাৰে?",
+  onboardLanguageHelp: "পিছত সলনি কৰিব পাৰিব।",
+  onboardReadyTitle: "আৰম্ভ কৰিবলৈ সাজু নেকি?",
+  onboardReadyBody: "আমি এটা সৰু কামেৰে আৰম্ভ কৰিম। খৰখেদাৰ প্ৰয়োজন নাই।",
+  onboardStepLabel: "খোজ",
+  onboardOf: "ৰ",
+
+  greetingMorning: "শুভ ৰাতিপুৱা",
+  greetingAfternoon: "শুভ দুপৰীয়া",
+  greetingEvening: "শুভ সন্ধিয়া",
+  homeInvite: "আহক, অলপ সময় একেলগে কটাওঁ।",
+  startTodaysActivity: "আজিৰ কাম আৰম্ভ কৰক",
+  continueActivity: "আজিৰ কাম আগবঢ়াই নিয়ক",
+  todaysProgress: "আজিৰ অগ্ৰগতি",
+  homeGoalMet: "আপুনি আজি তিনিওটা কাম সম্পূৰ্ণ কৰিলে।",
+  playAnother: "আৰু এটা কাম খেলক",
+  progressOf: "আজি সম্পূৰ্ণ হোৱা কাম",
+  quickActions: "সোনকালে যাওক",
+  navGames: "খেল",
+  navMemories: "স্মৃতি",
+  navReminders: "মনত পেলোৱা",
+  navTalk: "কগনিসাৰথীৰ সৈতে কথা পাতক",
+  navHistory: "মোৰ কামবোৰ",
+  navProfile: "মোৰ তথ্য",
+
+  domainSHORT_TERM_MEMORY: "স্মৃতি",
+  domainATTENTION: "মনোযোগ",
+  domainWORKING_MEMORY: "কাৰ্যকৰী স্মৃতি",
+
+  gamesTitle: "এটা কাম বাছি লওক",
+  gamesSubtitle: "প্ৰতিটোৱে মাত্ৰ কেইমিনিটমান লয়।",
+  chooseDifficulty: "আপুনি কেনেকৈ খেলিব বিচাৰে?",
+  difficultyEasy: "সহজ",
+  difficultyMedium: "মধ্যম",
+  difficultyHard: "কঠিন",
+  difficultyEasyHelp: "লাহে লাহে আৰম্ভ",
+  difficultyMediumHelp: "অলপ বেছি মনত ৰাখিব লাগিব",
+  difficultyHardHelp: "আটাইতকৈ ডাঙৰ প্ৰত্যাহ্বান",
+  howToPlay: "কেনেকৈ খেলিব",
+  beginActivity: "আৰম্ভ কৰক",
+  round: "পালি",
+  memorise: "ভালদৰে চাওক",
+  timeLeft: "বাকী সময়",
+  seconds: "ছেকেণ্ড",
+  rememberObjectsPrompt: "আপুনি কোনবোৰ বস্তু মনত ৰাখিছে?",
+  findDifferentPrompt: "কোনখন বেলেগ?",
+  sequenceWatchPrompt: "ক্ৰমটো চাওক",
+  sequenceAnswerPrompt: "এতিয়া সেই একে ক্ৰমতে টিপক",
+  sequenceYourAnswer: "এতিয়ালৈকে আপোনাৰ উত্তৰ",
+  correct: "শুদ্ধ",
+  notQuite: "ঠিক নহ'ল",
+  yourTurn: "এতিয়া আপোনাৰ পাল",
+  tapToAnswer: "আপোনাৰ উত্তৰত টিপক",
+  checkAnswer: "উত্তৰ চাওক",
+  clearSelection: "আঁতৰাওক",
+  quitActivity: "কাম বন্ধ কৰক",
+
+  resultWonderful: "অতি সুন্দৰ!",
+  resultWellDone: "বৰ ভাল!",
+  resultNiceWork: "ভাল কৰিলে!",
+  resultGoodTry: "ভাল চেষ্টা!",
+  resultEncourage: "প্ৰতিটো চেষ্টাই সহায় কৰে। আহক, আকৌ এবাৰ কৰোঁ।",
+  resultPlayAgain: "আকৌ খেলক",
+  resultBackHome: "ঘৰলৈ উভতি যাওক",
+  resultAnotherQuestion: "আৰু এটা কাম খেলিব বিচাৰেনে?",
+  resultSummary: "আপুনি {total} টাৰ ভিতৰত {correct} টা শুদ্ধ কৰিলে।",
+  resultLevel: "স্তৰ",
+  resultStarsLabel: "আপোনাৰ তৰা",
+  resultTimeTaken: "লগা সময়",
+  resultAccuracy: "শুদ্ধ উত্তৰ",
+
+  historyTitle: "মোৰ কামবোৰ",
+  historySubtitle: "আপুনি এতিয়ালৈকে কি কি খেলিলে।",
+  historyToday: "আজি",
+  historyEarlier: "আগৰ",
+  historyEmpty: "আপুনি এতিয়ালৈকে একো খেলা নাই।",
+  historyEmptyAction: "প্ৰথম কামটো আৰম্ভ কৰক",
+  historyCompleted: "সম্পূৰ্ণ হ'ল",
+  historyUnfinished: "সম্পূৰ্ণ হোৱা নাই",
+  historyScore: "নম্বৰ",
+
+  profileTitle: "মোৰ তথ্য",
+  profileName: "মোৰ নাম",
+  profileLanguage: "ভাষা",
+  profileTextSize: "আখৰৰ আকাৰ",
+  profileAvatar: "মোৰ ছবি",
+  profileCaregiver: "মোৰ যত্ন লওঁতা",
+  profileCaregiverConnected: "সংযুক্ত হৈ আছে",
+  profileCaregiverNone: "এতিয়ালৈকে কোনো যত্ন লওঁতা সংযুক্ত হোৱা নাই",
+  profileConnectCode: "আপোনাৰ সংযোগ ক'ড",
+  profileConnectCodeHelp:
+    "এই ক'ডটো পৰিয়ালৰ কাৰোবাক দিয়ক। ইয়াৰ দ্বাৰা তেওঁলোকে আপোনাৰ কামবোৰ চাব পাৰিব।",
+  textSizeComfortable: "সাধাৰণ",
+  textSizeLarge: "ডাঙৰ",
+  textSizeExtraLarge: "আটাইতকৈ ডাঙৰ",
+  profileSaveChanges: "সালসলনি সাঁচি থওক",
+  profileSwitchUser: "বাহিৰ হওক",
+
+  memoriesTitle: "স্মৃতি",
+  memoriesBody:
+    "আপোনাৰ ফটো আৰু আপোনজনৰ বাবে এখন ঠাই। আমি এতিয়াও ইয়াক সাজি আছোঁ।",
+  remindersTitle: "মনত পেলোৱা",
+  remindersBody: "আপোনাৰ দিনটোৰ বাবে সৰু সৰু মনত পেলোৱা। আমি এতিয়াও সাজি আছোঁ।",
+  talkBody:
+    "কগনিসাৰথীৰ সৈতে মাতেৰে কথা পতাটো এতিয়াও সাজু হোৱা নাই। ই পিছৰ আপডেটত আহিব।",
+
+  errorTitle: "কিবা এটা ভুল হ'ল।",
+  errorBody: "আহক, আকৌ এবাৰ চেষ্টা কৰোঁ।",
+  notFoundTitle: "সেই পৃষ্ঠাখন পোৱা নগ'ল।",
+  notFoundBody: "আহক, চিনাকি ঠাইলৈ উভতি যাওঁ।",
+};
+
+const dictionaries: Record<Language, Dict> = {
+  EN: en,
+  HI: { ...en, ...hi },
+  AS: { ...en, ...as },
+};
+
+export function getDict(language: Language | undefined | null): Dict {
+  return dictionaries[language ?? "EN"] ?? en;
+}
+
+/** BCP-47 tag, used for the `lang` attribute and Intl formatting. */
+export function localeTag(language: Language): string {
+  return { EN: "en-IN", HI: "hi-IN", AS: "as-IN" }[language];
+}

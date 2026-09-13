@@ -1,0 +1,215 @@
+// ============================================================
+// COGNISAARTHI — DATA MODEL (Phase 1)
+// ------------------------------------------------------------
+// Design notes on extensibility:
+//
+//  * `Game` is a seeded TABLE, not a hardcoded list. Adding a
+//    future game means inserting a row and registering one
+//    component — no schema or application rewrite.
+//  * `GameResult.rawRounds` stores per-round telemetry as JSON.
+//    Phase 2's personalisation engine needs round-level detail
+//    that a fixed column set cannot anticipate.
+//  * `GameSession.clientSessionId` is a nullable unique key so a
+//    session can be written idempotently. This is what future
+//    offline-first replay will use to avoid duplicate rows.
+//  * `CaregiverLink` is a join model, not a foreign key on User,
+//    so one caregiver can follow several people and one person
+//    can have several caregivers.
+//  * Reminders, personal memories, voice sessions and cognitive
+//    trends are deliberately NOT modelled yet. Empty unused
+//    tables are scaffolding, not architecture. They attach to
+//    `User` when their features are actually built.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------- enums ----------------------------
+
+enum Language {
+  EN
+  HI
+  AS
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum CognitiveDomain {
+  SHORT_TERM_MEMORY
+  ATTENTION
+  WORKING_MEMORY
+  LANGUAGE
+  PROCESSING_SPEED
+  EXECUTIVE_FUNCTION
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum FontScale {
+  COMFORTABLE
+  LARGE
+  EXTRA_LARGE
+}
+
+enum LinkStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+// ---------------------------- people ----------------------------
+
+/// An elderly user. Intentionally minimal: onboarding asks for a
+/// name and a language, nothing more.
+model User {
+  id       String   @id @default(cuid())
+  name     String
+  avatarId String   @default("marigold")
+  language Language @default(EN)
+
+  /// Short, readable code shown on the elder's profile. A caregiver
+  /// types it in to request a link. Chosen over emailing an invite
+  /// because the elder may not have email, but can read a code aloud.
+  connectCode String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  preference     UserPreference?
+  sessions       GameSession[]
+  caregiverLinks CaregiverLink[]
+
+  @@index([createdAt])
+}
+
+/// Accessibility and gameplay preferences, kept separate from
+/// identity so the settings surface can grow independently.
+model UserPreference {
+  id                  String     @id @default(cuid())
+  userId              String     @unique
+  language            Language   @default(EN)
+  fontScale           FontScale  @default(COMFORTABLE)
+  highContrast        Boolean    @default(false)
+  reduceMotion        Boolean    @default(false)
+  soundEnabled        Boolean    @default(true)
+  preferredDifficulty Difficulty @default(EASY)
+  updatedAt           DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// A family member or care worker. Unlike the elderly user, a
+/// caregiver authenticates with an email and password.
+model Caregiver {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  links CaregiverLink[]
+}
+
+/// Many-to-many relationship carrying its own metadata.
+model CaregiverLink {
+  id           String     @id @default(cuid())
+  caregiverId  String
+  userId       String
+  relationship String     @default("Family member")
+  status       LinkStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caregiverId, userId])
+  @@index([userId])
+}
+
+// ---------------------------- games ----------------------------
+
+/// Catalogue row for a cognitive activity. The `id` is a stable
+/// slug that matches the key in lib/game-engine/registry.ts.
+model Game {
+  id               String          @id
+  name             String
+  domain           CognitiveDomain
+  shortDescription String
+  instructions     String
+  iconKey          String
+  isActive         Boolean         @default(true)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+
+  sessions GameSession[]
+
+  @@index([isActive, sortOrder])
+}
+
+/// One playthrough. Created when the activity starts and closed
+/// when it finishes, so abandoned attempts are visible too.
+model GameSession {
+  id         String        @id @default(cuid())
+  userId     String
+  gameId     String
+  difficulty Difficulty
+  language   Language      @default(EN)
+  status     SessionStatus @default(IN_PROGRESS)
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  durationMs  Int?
+
+  roundsTotal     Int @default(0)
+  roundsCompleted Int @default(0)
+
+  /// Idempotency key supplied by the client. Reserved for the
+  /// future offline queue; unique so a replayed write is a no-op.
+  clientSessionId String? @unique
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game   Game        @relation(fields: [gameId], references: [id])
+  result GameResult?
+
+  @@index([userId, startedAt])
+  @@index([userId, status])
+}
+
+/// The scored outcome of a completed session.
+model GameResult {
+  id        String @id @default(cuid())
+  sessionId String @unique
+
+  score         Int // 0-100
+  accuracy      Float // 0-1
+  stars         Int // 0-5, presentation only
+  correctCount  Int    @default(0)
+  incorrectCount Int   @default(0)
+  mistakes      Int    @default(0)
+  hints         Int    @default(0)
+
+  totalResponseTimeMs Int @default(0)
+  avgResponseTimeMs   Int @default(0)
+
+  /// Per-round detail, shape defined by each game's engine module.
+  rawRounds Json?
+
+  createdAt DateTime @default(now())
+
+  session GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}

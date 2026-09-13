@@ -1,26 +1,187 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   COGNISAARTHI DESIGN SYSTEM — "Warm Digital Companion"
+   ------------------------------------------------------------
+   Earth-toned, high-contrast, generously spaced. Every colour
+   pairing used for text meets WCAG AA (>= 4.5:1); ratios are
+   noted beside each token. Accent is a FILL colour only — it
+   carries dark text, never light.
+   ============================================================ */
+
+@theme {
+  /* ---- Surfaces ---- */
+  --color-bg: #f7f2ea; /* warm paper */
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1e8da; /* sunken panels, inactive tiles */
+  --color-surface-sunken: #ebe0ce;
+
+  /* ---- Brand ---- */
+  --color-primary: #a64b2a; /* terracotta   5.7:1 on white */
+  --color-primary-strong: #8a3c20; /* pressed / hover           */
+  --color-primary-soft: #f6e5dc; /* tinted fill, dark text on top */
+  --color-secondary: #2f6b5e; /* tea-garden green  6.2:1 on white */
+  --color-secondary-strong: #235348;
+  --color-secondary-soft: #dfeae6;
+  --color-accent: #d98a2b; /* marigold — FILL ONLY (2.8:1) */
+  --color-accent-soft: #fbeed8;
+
+  /* ---- Text ---- */
+  --color-text: #2a231d; /* 14.8:1 on paper */
+  --color-text-muted: #6b5d50; /*  5.7:1 on paper */
+  --color-text-inverse: #fdf9f3;
+
+  /* ---- Feedback ---- */
+  --color-success: #2e6b3e; /* 6.2:1 */
+  --color-success-soft: #e2eee4;
+  --color-warning: #8a5a00; /* 5.9:1 */
+  --color-warning-soft: #fbeed8;
+  --color-error: #a32f2f; /* 7.0:1 */
+  --color-error-soft: #f8e3e1;
+
+  /* ---- Lines ---- */
+  --color-border: #e0d5c6;
+  --color-border-strong: #c9b9a3;
+  --color-focus: #1f5f8b; /* deliberately distinct from brand */
+
+  /* ---- Typography ----
+     Base root size is 18px (see html rule below), so 1rem = 18px
+     before the user's text-size preference is applied. */
+  --font-sans: var(--font-inter), var(--font-noto-deva),
+    var(--font-noto-beng), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-lora), var(--font-noto-deva),
+    var(--font-noto-beng), Georgia, "Times New Roman", serif;
+
+  /* ---- Radii — soft, never pill-shaped ---- */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  /* ---- Shadows — warm-tinted, low elevation ---- */
+  --shadow-soft: 0 1px 2px rgb(74 56 40 / 0.06), 0 2px 8px rgb(74 56 40 / 0.05);
+  --shadow-lift: 0 2px 4px rgb(74 56 40 / 0.07), 0 8px 20px rgb(74 56 40 / 0.08);
+
+  /* ---- Motion — exactly two named transitions ---- */
+  --ease-gentle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --animate-fade-up: fade-up 0.22s var(--ease-gentle) both;
+  --animate-pop: pop 0.22s var(--ease-gentle) both;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  60% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY BASE
+   ------------------------------------------------------------
+   Root font size drives the whole interface: Tailwind spacing,
+   radii and type are all rem-based, so raising --text-scale
+   enlarges the entire layout rather than just the letters.
+   ============================================================ */
+
+:root {
+  --text-scale: 1;
+}
+
+html[data-text-size="large"] {
+  --text-scale: 1.125;
+}
+
+html[data-text-size="xlarge"] {
+  --text-scale: 1.25;
+}
+
+html {
+  font-size: calc(18px * var(--text-scale));
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* Visible, high-contrast focus for keyboard users on every control. */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* Never remove focus styling; only tune it. */
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Respect the OS-level motion preference. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Opt-in setting for users who want stillness without changing the OS. */
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Screen-reader-only text, used to pair every colour cue with words. */
+@utility sr-only-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
