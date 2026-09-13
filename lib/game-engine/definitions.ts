@@ -44,6 +44,11 @@ export interface RememberSequenceConfig {
   paletteExtra: number;
 }
 
+export interface StoryRecallConfig {
+  /** How many of the story's questions to ask. */
+  questionCount: number;
+}
+
 // ---------------------------------------------------------------
 // Definitions
 // ---------------------------------------------------------------
@@ -132,10 +137,39 @@ export const REMEMBER_SEQUENCE: GameDefinition<RememberSequenceConfig> = {
   },
 };
 
+export const STORY_RECALL: GameDefinition<StoryRecallConfig> = {
+  id: "story-recall",
+  domain: "LANGUAGE",
+  iconKey: "book-open",
+  accent: "secondary",
+  glyph: "📖",
+  name: {
+    EN: "Story Time",
+    HI: "कहानी का समय",
+    AS: "কাহিনীৰ সময়",
+  },
+  shortDescription: {
+    EN: "Listen to a short, familiar story, then answer a few gentle questions.",
+    HI: "एक छोटी, जानी-पहचानी कहानी सुनिए, फिर कुछ आसान सवालों के जवाब दीजिए।",
+    AS: "এটা চুটি, চিনাকি কাহিনী শুনক, তাৰ পিছত কেইটামান সহজ প্ৰশ্নৰ উত্তৰ দিয়ক।",
+  },
+  instructions: {
+    EN: "A short story will appear. Read it, or listen to it, and try to remember what happens. Then answer a few simple questions about it.",
+    HI: "एक छोटी कहानी दिखेगी। उसे पढ़िए या सुनिए और याद रखने की कोशिश कीजिए कि क्या होता है। फिर उसके बारे में कुछ आसान सवालों के जवाब दीजिए।",
+    AS: "এটা চুটি কাহিনী দেখা যাব। ইয়াক পঢ়ক বা শুনক আৰু কি ঘটে মনত ৰাখিবলৈ চেষ্টা কৰক। তাৰ পিছত ইয়াৰ বিষয়ে কেইটামান সহজ প্ৰশ্নৰ উত্তৰ দিয়ক।",
+  },
+  difficulties: {
+    EASY: { questionCount: 2 },
+    MEDIUM: { questionCount: 3 },
+    HARD: { questionCount: 3 },
+  },
+};
+
 export const GAME_DEFINITIONS = [
   REMEMBER_OBJECTS,
   FIND_DIFFERENT,
   REMEMBER_SEQUENCE,
+  STORY_RECALL,
 ] as const;
 
 const BY_ID = new Map<string, GameDefinition<unknown>>(

@@ -33,7 +33,14 @@ export default async function HomePage() {
   const goalMet = completedToday >= DAILY_GOAL;
 
   return (
-    <PageShell header={<ElderlyHeader />} nav={<BottomNav dict={dict} />}>
+    <PageShell header={<ElderlyHeader />} nav={<BottomNav
+          dict={dict}
+          voice={
+            user.preference?.voiceEnabled
+              ? { language, speechRate: user.preference.speechRate }
+              : undefined
+          }
+        />}>
       <section className="animate-fade-up">
         <h1 className="font-serif text-4xl leading-tight font-semibold">
           {dict[greetingKey()]}, {user.name}

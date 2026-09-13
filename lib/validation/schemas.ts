@@ -27,6 +27,10 @@ export const profileUpdateSchema = z.object({
   avatarId: z.string().min(1).max(32).optional(),
   reduceMotion: z.boolean().optional(),
   preferredDifficulty: difficultySchema.optional(),
+  // Phase 3 voice assistance preferences.
+  voiceEnabled: z.boolean().optional(),
+  autoReadInstructions: z.boolean().optional(),
+  speechRate: z.enum(["SLOW", "NORMAL"]).optional(),
 });
 
 export const caregiverLoginSchema = z.object({
@@ -45,6 +49,29 @@ export const caregiverSignupSchema = z.object({
     .string()
     .trim()
     .min(1, "Enter the code shown on your family member's profile."),
+});
+
+export const memoryCategorySchema = z.enum([
+  "PERSON",
+  "PLACE",
+  "THING",
+  "MOMENT",
+]);
+export const speechRateSchema = z.enum(["SLOW", "NORMAL"]);
+
+/** Memory fields shared by create and update (image handled separately). */
+export const memoryFieldsSchema = z.object({
+  category: memoryCategorySchema,
+  title: z.string().trim().min(1, "A name or title is needed.").max(60),
+  relationship: z.string().trim().max(40).optional().or(z.literal("")),
+  description: z.string().trim().max(300).optional().or(z.literal("")),
+  enabled: z.boolean().optional(),
+});
+
+export const voicePrefsSchema = z.object({
+  voiceEnabled: z.boolean().optional(),
+  autoReadInstructions: z.boolean().optional(),
+  speechRate: speechRateSchema.optional(),
 });
 
 export const startSessionSchema = z.object({

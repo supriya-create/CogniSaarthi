@@ -1,5 +1,8 @@
 import { CalendarCheck, Gauge, ListChecks } from "lucide-react";
 
+import Link from "next/link";
+import { Images } from "lucide-react";
+
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
 import { SummaryTile } from "@/components/caregiver/SummaryTile";
 import { RecentSessionRow } from "@/components/caregiver/RecentSessionRow";
@@ -81,6 +84,27 @@ export default async function CaregiverDashboard() {
           Icon={Gauge}
         />
       </div>
+
+      <Link
+        href="/caregiver/memories"
+        className="mt-8 flex items-center gap-4 rounded-2xl border border-border bg-surface p-5 shadow-soft transition-colors hover:border-border-strong hover:bg-surface-alt"
+      >
+        <span
+          aria-hidden
+          className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary-soft text-secondary"
+        >
+          <Images className="size-6" />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-lg font-semibold">Memory bank</span>
+          <span className="text-base text-text-muted">
+            Add people, places and moments for {user.name} to remember.
+          </span>
+        </span>
+        <span className="shrink-0 text-base font-semibold text-primary">
+          Manage →
+        </span>
+      </Link>
 
       <CognitivePerformancePanel
         profiles={cognitiveProfile}

@@ -1,4 +1,9 @@
-import type { CognitiveDomain, Difficulty, Language } from "@prisma/client";
+import type {
+  CognitiveDomain,
+  Difficulty,
+  Language,
+  SpeechRate,
+} from "@prisma/client";
 
 /**
  * The contract every cognitive activity implements.
@@ -16,7 +21,8 @@ import type { CognitiveDomain, Difficulty, Language } from "@prisma/client";
 export type GameId =
   | "remember-objects"
   | "find-different"
-  | "remember-sequence";
+  | "remember-sequence"
+  | "story-recall";
 
 /** Which brand colour a game is presented in. */
 export type GameAccent = "primary" | "secondary" | "tea";
@@ -78,6 +84,9 @@ export interface GamePlayProps<TConfig = unknown> {
   config: TConfig;
   difficulty: Difficulty;
   language: Language;
+  /** Phase 3 voice assist — components may use these or ignore them. */
+  voiceEnabled?: boolean;
+  speechRate?: SpeechRate;
   onComplete: (outcome: SessionOutcome) => void;
   onQuit: () => void;
 }

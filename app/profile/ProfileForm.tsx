@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Check, LogOut } from "lucide-react";
-import type { FontScale, Language } from "@prisma/client";
+import type { FontScale, Language, SpeechRate } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
@@ -20,6 +20,9 @@ type Props = {
     avatarId: string;
     language: Language;
     fontScale: FontScale;
+    voiceEnabled: boolean;
+    autoReadInstructions: boolean;
+    speechRate: SpeechRate;
   };
 };
 
@@ -38,6 +41,9 @@ export function ProfileForm({ initial }: Props) {
   const [avatarId, setAvatarId] = useState(initial.avatarId);
   const [language, setLanguage] = useState<Language>(initial.language);
   const [fontScale, setFontScale] = useState<FontScale>(initial.fontScale);
+  const [voiceEnabled, setVoiceEnabled] = useState(initial.voiceEnabled);
+  const [autoRead, setAutoRead] = useState(initial.autoReadInstructions);
+  const [speechRate, setSpeechRate] = useState<SpeechRate>(initial.speechRate);
 
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
@@ -63,6 +69,9 @@ export function ProfileForm({ initial }: Props) {
           avatarId,
           language,
           fontScale,
+          voiceEnabled,
+          autoReadInstructions: autoRead,
+          speechRate,
         }),
       });
       if (!response.ok) throw new Error("save failed");
@@ -157,6 +166,83 @@ export function ProfileForm({ initial }: Props) {
             }}
             dict={dict}
           />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="font-serif text-xl font-semibold">
+          {dict.profileVoice}
+        </h2>
+        <p className="mt-1 text-base text-text-muted">
+          {dict.profileVoiceHelp}
+        </p>
+
+        <div className="mt-4 flex flex-col gap-3">
+          <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
+            <span className="text-lg font-semibold">{dict.profileVoiceOn}</span>
+            <input
+              type="checkbox"
+              checked={voiceEnabled}
+              onChange={(e) => {
+                setVoiceEnabled(e.target.checked);
+                setStatus("idle");
+              }}
+              className="size-6"
+            />
+          </label>
+
+          {voiceEnabled ? (
+            <>
+              <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
+                <span className="text-lg font-semibold">
+                  {dict.profileAutoRead}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={autoRead}
+                  onChange={(e) => {
+                    setAutoRead(e.target.checked);
+                    setStatus("idle");
+                  }}
+                  className="size-6"
+                />
+              </label>
+
+              <div
+                role="radiogroup"
+                aria-label={dict.profileSpeechSpeed}
+                className="rounded-2xl border-2 border-border bg-surface px-5 py-3"
+              >
+                <p className="text-lg font-semibold">
+                  {dict.profileSpeechSpeed}
+                </p>
+                <div className="mt-3 flex gap-3">
+                  {(["SLOW", "NORMAL"] as const).map((rate) => {
+                    const selected = speechRate === rate;
+                    return (
+                      <button
+                        key={rate}
+                        type="button"
+                        onClick={() => {
+                          setSpeechRate(rate);
+                          setStatus("idle");
+                        }}
+                        aria-pressed={selected}
+                        className={cn(
+                          "flex-1 rounded-xl border-2 px-4 py-2.5 text-lg font-semibold transition-colors",
+                          selected
+                            ? "border-primary bg-primary-soft"
+                            : "border-border-strong bg-surface",
+                        )}
+                      >
+                        {rate === "SLOW" ? dict.speedSlow : dict.speedNormal}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
       </section>
 

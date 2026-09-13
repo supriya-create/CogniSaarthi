@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Play, RotateCcw } from "lucide-react";
-import type { Difficulty, Language } from "@prisma/client";
+import { useEffect, useRef, useState } from "react";
+import { Play, RotateCcw, Volume2 } from "lucide-react";
+import type { Difficulty, Language, SpeechRate } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
@@ -13,6 +13,7 @@ import { GAME_COMPONENTS } from "@/components/games/registry";
 import { LogoMark } from "@/components/ui/Logo";
 import { getDict } from "@/lib/i18n/dictionaries";
 import { getDefinition } from "@/lib/game-engine/definitions";
+import { useVoice } from "@/lib/voice/useVoice";
 import type { GameId, SessionOutcome } from "@/lib/game-engine/types";
 
 type Phase = "intro" | "playing" | "saving" | "failed";
@@ -29,16 +30,34 @@ export function GameRunner({
   gameId,
   language,
   initialDifficulty,
+  voiceEnabled = false,
+  autoReadInstructions = false,
+  speechRate = "NORMAL",
 }: {
   gameId: GameId;
   language: Language;
   initialDifficulty: Difficulty;
+  voiceEnabled?: boolean;
+  autoReadInstructions?: boolean;
+  speechRate?: SpeechRate;
 }) {
   const router = useRouter();
   const dict = getDict(language);
+  const voice = useVoice({ language, rate: speechRate });
 
   const definition = getDefinition(gameId);
   const PlayComponent = GAME_COMPONENTS[gameId];
+
+  // Auto-read the instructions once on the intro, if the person has
+  // asked for it. Guarded so it speaks a single time.
+  const spokenRef = useRef(false);
+  useEffect(() => {
+    if (!definition || !voiceEnabled || !autoReadInstructions) return;
+    if (spokenRef.current) return;
+    spokenRef.current = true;
+    voice.speak(definition.instructions[language]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [phase, setPhase] = useState<Phase>("intro");
@@ -111,6 +130,8 @@ export function GameRunner({
         config={definition.difficulties[difficulty]}
         difficulty={difficulty}
         language={language}
+        voiceEnabled={voiceEnabled}
+        speechRate={speechRate}
         onComplete={(outcome: SessionOutcome) => save(outcome, sessionId)}
         onQuit={() => void quit(sessionId)}
       />
@@ -180,9 +201,26 @@ export function GameRunner({
         </div>
 
         <section className="mt-7 rounded-2xl border border-border bg-surface p-6 shadow-soft">
-          <h2 className="font-serif text-xl font-semibold">
-            {dict.howToPlay}
-          </h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="font-serif text-xl font-semibold">
+              {dict.howToPlay}
+            </h2>
+            {/* Hear the instructions read aloud — important for anyone
+                who finds reading tiring. Only offered when the device
+                can actually speak. */}
+            {voice.supported.output ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  voice.speak(definition.instructions[language])
+                }
+                icon={<Volume2 className="size-5" aria-hidden />}
+              >
+                {dict.hearAgain}
+              </Button>
+            ) : null}
+          </div>
           <p className="mt-3 text-lg leading-relaxed text-text-muted">
             {definition.instructions[language]}
           </p>

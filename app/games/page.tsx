@@ -27,7 +27,14 @@ export default async function GamesPage() {
   return (
     <PageShell
       header={<ElderlyHeader backHref="/home" backLabel={dict.back} />}
-      nav={<BottomNav dict={dict} />}
+      nav={<BottomNav
+          dict={dict}
+          voice={
+            user.preference?.voiceEnabled
+              ? { language, speechRate: user.preference.speechRate }
+              : undefined
+          }
+        />}
     >
       <h1 className="font-serif text-3xl font-semibold">{dict.gamesTitle}</h1>
       <p className="mt-2 text-lg text-text-muted">{dict.gamesSubtitle}</p>

@@ -24,8 +24,28 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { name, avatarId, language, fontScale, reduceMotion, preferredDifficulty } =
-    parsed.data;
+  const {
+    name,
+    avatarId,
+    language,
+    fontScale,
+    reduceMotion,
+    preferredDifficulty,
+    voiceEnabled,
+    autoReadInstructions,
+    speechRate,
+  } = parsed.data;
+
+  // Preference fields shared by create and update.
+  const preferenceData = {
+    ...(language !== undefined && { language }),
+    ...(fontScale !== undefined && { fontScale }),
+    ...(reduceMotion !== undefined && { reduceMotion }),
+    ...(preferredDifficulty !== undefined && { preferredDifficulty }),
+    ...(voiceEnabled !== undefined && { voiceEnabled }),
+    ...(autoReadInstructions !== undefined && { autoReadInstructions }),
+    ...(speechRate !== undefined && { speechRate }),
+  };
 
   await prisma.user.update({
     where: { id: user.id },
@@ -35,20 +55,7 @@ export async function PATCH(request: Request) {
       ...(language !== undefined && { language }),
       preference: {
         // A user created before preferences existed still gets a row.
-        upsert: {
-          create: {
-            ...(language !== undefined && { language }),
-            ...(fontScale !== undefined && { fontScale }),
-            ...(reduceMotion !== undefined && { reduceMotion }),
-            ...(preferredDifficulty !== undefined && { preferredDifficulty }),
-          },
-          update: {
-            ...(language !== undefined && { language }),
-            ...(fontScale !== undefined && { fontScale }),
-            ...(reduceMotion !== undefined && { reduceMotion }),
-            ...(preferredDifficulty !== undefined && { preferredDifficulty }),
-          },
-        },
+        upsert: { create: preferenceData, update: preferenceData },
       },
     },
   });

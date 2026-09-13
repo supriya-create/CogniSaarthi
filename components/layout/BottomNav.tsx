@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, ListChecks, UserRound } from "lucide-react";
+import type { Language, SpeechRate } from "@prisma/client";
 
 import { cn } from "@/lib/utils/cn";
 import type { Dict } from "@/lib/i18n/dictionaries";
+import { VoiceButton } from "@/components/elderly/VoiceButton";
 
 /**
  * Three destinations, permanently visible, labelled in words.
@@ -14,7 +16,14 @@ import type { Dict } from "@/lib/i18n/dictionaries";
  * a person should be able to see every place they can go without
  * opening anything.
  */
-export function BottomNav({ dict }: { dict: Dict }) {
+export function BottomNav({
+  dict,
+  voice,
+}: {
+  dict: Dict;
+  /** When present, a floating voice control is shown above the nav. */
+  voice?: { language: Language; speechRate: SpeechRate };
+}) {
   const pathname = usePathname();
 
   const items = [
@@ -24,10 +33,17 @@ export function BottomNav({ dict }: { dict: Dict }) {
   ];
 
   return (
-    <nav
-      aria-label={dict.quickActions}
-      className="sticky bottom-0 z-30 border-t border-border bg-surface/97 backdrop-blur-sm"
-    >
+    <>
+      {voice ? (
+        <VoiceButton
+          language={voice.language}
+          speechRate={voice.speechRate}
+        />
+      ) : null}
+      <nav
+        aria-label={dict.quickActions}
+        className="sticky bottom-0 z-30 border-t border-border bg-surface/97 backdrop-blur-sm"
+      >
       <ul className="mx-auto flex max-w-3xl items-stretch">
         {items.map(({ href, label, Icon }) => {
           const active = pathname === href;
@@ -62,7 +78,8 @@ export function BottomNav({ dict }: { dict: Dict }) {
             </li>
           );
         })}
-      </ul>
-    </nav>
+        </ul>
+      </nav>
+    </>
   );
 }

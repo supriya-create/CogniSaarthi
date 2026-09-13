@@ -65,6 +65,21 @@ enum FontScale {
   EXTRA_LARGE
 }
 
+enum SpeechRate {
+  SLOW
+  NORMAL
+}
+
+/// Phase 3 personal memory bank. A memory is one card the caregiver
+/// curates on the elder's behalf — a person, a place, a familiar
+/// thing, or a moment.
+enum MemoryCategory {
+  PERSON
+  PLACE
+  THING
+  MOMENT
+}
+
 enum LinkStatus {
   PENDING
   ACTIVE
@@ -92,6 +107,7 @@ model User {
   preference     UserPreference?
   sessions       GameSession[]
   caregiverLinks CaregiverLink[]
+  memories       PersonalMemory[]
 
   @@index([createdAt])
 }
@@ -107,9 +123,47 @@ model UserPreference {
   reduceMotion        Boolean    @default(false)
   soundEnabled        Boolean    @default(true)
   preferredDifficulty Difficulty @default(EASY)
-  updatedAt           DateTime   @updatedAt
+
+  // Phase 3 voice assistance. Folded in here rather than a separate
+  // VoicePreference table — these are a handful of settings on the
+  // same 1-1 record, and a new table would be over-normalisation.
+  voiceEnabled         Boolean    @default(false)
+  autoReadInstructions Boolean    @default(false)
+  speechRate           SpeechRate @default(NORMAL)
+
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// A curated personal memory shown to one elder. Created and owned by
+/// a caregiver linked to that elder; the elder only ever sees the
+/// ones marked enabled. Images are stored outside the web root and
+/// served through an authenticated route (see /api/memories image).
+model PersonalMemory {
+  id          String         @id @default(cuid())
+  userId      String // the elder this memory belongs to
+  caregiverId String // the caregiver who added it
+  category    MemoryCategory
+  title       String // e.g. a person's name, a place name
+  relationship String? // e.g. "Daughter" — for PERSON cards
+  description String? // a short, gentle note
+
+  /// Path to the stored image on disk, relative to the private
+  /// storage root. Never a public URL. Null when there is no photo.
+  imagePath String?
+
+  /// Whether this memory may be used in personal recall activities.
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enabled])
+  @@index([caregiverId])
 }
 
 /// A family member or care worker. Unlike the elderly user, a
@@ -122,7 +176,8 @@ model Caregiver {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  links CaregiverLink[]
+  links    CaregiverLink[]
+  memories PersonalMemory[]
 }
 
 /// Many-to-many relationship carrying its own metadata.

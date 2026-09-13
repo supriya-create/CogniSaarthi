@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { RememberObjectsGame } from "@/components/games/RememberObjectsGame";
 import { FindDifferentGame } from "@/components/games/FindDifferentGame";
 import { RememberSequenceGame } from "@/components/games/RememberSequenceGame";
+import { StoryRecallGame } from "@/components/games/StoryRecallGame";
 import type { GameId, GamePlayProps } from "@/lib/game-engine/types";
 
 /**
@@ -22,4 +23,5 @@ export const GAME_COMPONENTS: Record<
   "remember-objects": RememberObjectsGame,
   "find-different": FindDifferentGame,
   "remember-sequence": RememberSequenceGame,
+  "story-recall": StoryRecallGame,
 };

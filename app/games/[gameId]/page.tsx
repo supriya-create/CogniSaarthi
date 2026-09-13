@@ -26,6 +26,9 @@ export default async function GamePage({
       gameId={gameId}
       language={user.preference?.language ?? user.language}
       initialDifficulty={initialDifficulty}
+      voiceEnabled={user.preference?.voiceEnabled ?? false}
+      autoReadInstructions={user.preference?.autoReadInstructions ?? false}
+      speechRate={user.preference?.speechRate ?? "NORMAL"}
     />
   );
 }

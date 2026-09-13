@@ -20,7 +20,14 @@ export default async function ProfilePage() {
   return (
     <PageShell
       header={<ElderlyHeader backHref="/home" backLabel={dict.back} />}
-      nav={<BottomNav dict={dict} />}
+      nav={<BottomNav
+          dict={dict}
+          voice={
+            user.preference?.voiceEnabled
+              ? { language, speechRate: user.preference.speechRate }
+              : undefined
+          }
+        />}
     >
       <div className="flex items-center gap-4">
         <Avatar avatarId={user.avatarId} size="lg" />
@@ -72,6 +79,10 @@ export default async function ProfilePage() {
             avatarId: user.avatarId,
             language,
             fontScale: user.preference?.fontScale ?? "COMFORTABLE",
+            voiceEnabled: user.preference?.voiceEnabled ?? false,
+            autoReadInstructions:
+              user.preference?.autoReadInstructions ?? false,
+            speechRate: user.preference?.speechRate ?? "NORMAL",
           }}
         />
       </div>
