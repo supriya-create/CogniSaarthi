@@ -23,6 +23,9 @@ type Props = {
     voiceEnabled: boolean;
     autoReadInstructions: boolean;
     speechRate: SpeechRate;
+    reminderVoice: boolean;
+    autoReadReminders: boolean;
+    notificationSound: boolean;
   };
 };
 
@@ -44,6 +47,13 @@ export function ProfileForm({ initial }: Props) {
   const [voiceEnabled, setVoiceEnabled] = useState(initial.voiceEnabled);
   const [autoRead, setAutoRead] = useState(initial.autoReadInstructions);
   const [speechRate, setSpeechRate] = useState<SpeechRate>(initial.speechRate);
+  const [reminderVoice, setReminderVoice] = useState(initial.reminderVoice);
+  const [autoReadReminders, setAutoReadReminders] = useState(
+    initial.autoReadReminders,
+  );
+  const [notificationSound, setNotificationSound] = useState(
+    initial.notificationSound,
+  );
 
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
@@ -72,6 +82,9 @@ export function ProfileForm({ initial }: Props) {
           voiceEnabled,
           autoReadInstructions: autoRead,
           speechRate,
+          reminderVoice,
+          autoReadReminders,
+          notificationSound,
         }),
       });
       if (!response.ok) throw new Error("save failed");
@@ -241,6 +254,68 @@ export function ProfileForm({ initial }: Props) {
                   })}
                 </div>
               </div>
+            </>
+          ) : null}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="font-serif text-xl font-semibold">
+          {dict.profileNotifications}
+        </h2>
+        <p className="mt-1 text-base text-text-muted">
+          {dict.profileNotificationsHelp}
+        </p>
+
+        <div className="mt-4 flex flex-col gap-3">
+          <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
+            <span className="text-lg font-semibold">
+              {dict.profileNotificationSound}
+            </span>
+            <input
+              type="checkbox"
+              checked={notificationSound}
+              onChange={(e) => {
+                setNotificationSound(e.target.checked);
+                setStatus("idle");
+              }}
+              className="size-6"
+            />
+          </label>
+
+          {voiceEnabled ? (
+            <>
+              <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
+                <span className="text-lg font-semibold">
+                  {dict.profileReminderVoice}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={reminderVoice}
+                  onChange={(e) => {
+                    setReminderVoice(e.target.checked);
+                    setStatus("idle");
+                  }}
+                  className="size-6"
+                />
+              </label>
+
+              {reminderVoice ? (
+                <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
+                  <span className="text-lg font-semibold">
+                    {dict.profileAutoReadReminders}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={autoReadReminders}
+                    onChange={(e) => {
+                      setAutoReadReminders(e.target.checked);
+                      setStatus("idle");
+                    }}
+                    className="size-6"
+                  />
+                </label>
+              ) : null}
             </>
           ) : null}
         </div>

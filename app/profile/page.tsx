@@ -83,6 +83,9 @@ export default async function ProfilePage() {
             autoReadInstructions:
               user.preference?.autoReadInstructions ?? false,
             speechRate: user.preference?.speechRate ?? "NORMAL",
+            reminderVoice: user.preference?.reminderVoice ?? true,
+            autoReadReminders: user.preference?.autoReadReminders ?? false,
+            notificationSound: user.preference?.notificationSound ?? true,
           }}
         />
       </div>

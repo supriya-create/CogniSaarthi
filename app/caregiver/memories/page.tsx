@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
+import { CaregiverNav } from "@/components/caregiver/CaregiverNav";
 import { MemoryManager } from "@/components/caregiver/MemoryManager";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { requireCaregiver } from "@/lib/auth/current-user";
@@ -14,7 +15,7 @@ export default async function CaregiverMemoriesPage() {
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />}>
+      <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
         <EmptyState
           title="No one is connected to your account yet."
           body="Connect to a family member first, then you can add memories for them."
@@ -26,7 +27,7 @@ export default async function CaregiverMemoriesPage() {
   const memories = await getMemoriesForUser(user.id);
 
   return (
-    <CaregiverShell action={<SignOutButton />}>
+    <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
       <Link
         href="/caregiver"
         className="inline-flex items-center gap-1 text-base font-semibold text-text-muted hover:text-text"

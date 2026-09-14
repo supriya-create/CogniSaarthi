@@ -19,6 +19,16 @@ export type VoiceCommand =
   | "OPEN_MEMORIES"
   | "GO_HOME"
   | "OPEN_PROFILE"
+  // Phase 4 reminder commands. OPEN_REMINDERS / SHOW_TODAY / READ_REMINDERS
+  // navigate or read out; MARK_DONE / REMIND_LATER act on the reminder in
+  // focus and are only honoured on the reminders screen. OPEN_ALERTS is a
+  // caregiver command and is never routed from the elder interface.
+  | "OPEN_REMINDERS"
+  | "SHOW_TODAY"
+  | "READ_REMINDERS"
+  | "MARK_DONE"
+  | "REMIND_LATER"
+  | "OPEN_ALERTS"
   | "REPEAT"
   | "STOP";
 
@@ -55,14 +65,79 @@ const PATTERNS: Record<VoiceCommand, string[]> = {
     "বন্ধ",
     "ৰখাও",
   ],
+  READ_REMINDERS: [
+    "read reminder",
+    "read my reminder",
+    "read out",
+    "what are my reminder",
+    "read the reminder",
+    // Hindi
+    "याद दिलाने पढ़",
+    "पढ़कर सुना",
+    // Assamese
+    "মনত পেলোৱা পঢ়",
+  ],
+  MARK_DONE: [
+    "mark done",
+    "mark as done",
+    "it is done",
+    "i did it",
+    "finished",
+    "completed",
+    "done it",
+    // Hindi
+    "हो गया",
+    "कर लिया",
+    // Assamese
+    "কৰি ল",
+    "শেষ হ",
+  ],
+  REMIND_LATER: [
+    "remind me later",
+    "remind later",
+    "later",
+    "not now",
+    "afterward",
+    // Hindi
+    "बाद में",
+    "अभी नहीं",
+    // Assamese
+    "পিছত",
+    "এতিয়া নহয়",
+  ],
+  OPEN_REMINDERS: [
+    "reminder",
+    "reminders",
+    "my reminder",
+    // Hindi
+    "याद दिला",
+    // Assamese
+    "মনত পেলো",
+  ],
+  SHOW_TODAY: [
+    "my day",
+    "routine",
+    "schedule",
+    "daily routine",
+    "my routine",
+    // Hindi
+    "मेरा दिन",
+    "दिनचर्या",
+    // Assamese
+    "মোৰ দিন",
+    "ৰুটিন",
+  ],
+  OPEN_ALERTS: [
+    "alerts",
+    "notifications",
+    "alert center",
+  ],
   OPEN_MEMORIES: [
     "memor", // memory / memories
     "my photos",
     "photos",
-    "family",
     "people",
     // Hindi
-    "याद",
     "यादें",
     "तस्वीर",
     // Assamese
@@ -131,6 +206,12 @@ const PATTERNS: Record<VoiceCommand, string[]> = {
 const COMMAND_ORDER: VoiceCommand[] = [
   "REPEAT",
   "STOP",
+  "MARK_DONE",
+  "REMIND_LATER",
+  "READ_REMINDERS",
+  "OPEN_REMINDERS",
+  "SHOW_TODAY",
+  "OPEN_ALERTS",
   "OPEN_MEMORIES",
   "OPEN_PROFILE",
   "OPEN_GAMES",
@@ -171,4 +252,9 @@ export const COMMAND_ROUTE: Partial<Record<VoiceCommand, string>> = {
   OPEN_MEMORIES: "/memories",
   GO_HOME: "/home",
   OPEN_PROFILE: "/profile",
+  // Phase 4 navigations. MARK_DONE / REMIND_LATER / READ_REMINDERS act in
+  // place on the reminders screen and so have no route. OPEN_ALERTS is a
+  // caregiver-only destination and is deliberately not routed here.
+  OPEN_REMINDERS: "/reminders",
+  SHOW_TODAY: "/routine",
 };

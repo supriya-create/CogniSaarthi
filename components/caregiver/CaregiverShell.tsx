@@ -18,13 +18,16 @@ import { Wordmark } from "@/components/ui/Logo";
 export function CaregiverShell({
   children,
   action,
+  nav,
 }: {
   children: ReactNode;
   action?: ReactNode;
+  /** Section navigation, shown on authenticated caregiver pages only. */
+  nav?: ReactNode;
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
-      <header className="border-b border-border bg-surface">
+      <header className="sticky top-0 z-30 border-b border-border bg-surface">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4">
           <Link href="/caregiver" className="rounded-lg">
             <Wordmark />
@@ -36,6 +39,7 @@ export function CaregiverShell({
             {action}
           </div>
         </div>
+        {nav}
       </header>
 
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">

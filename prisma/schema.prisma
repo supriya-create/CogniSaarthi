@@ -86,6 +86,88 @@ enum LinkStatus {
   REVOKED
 }
 
+// -------------------- Phase 4: reminders & alerts --------------------
+
+/// The kind of reminder, chosen by the caregiver. Only ever a label —
+/// nothing here is treated as clinical, and the copy shown for a
+/// MEDICATION reminder is neutral ("Medication reminder", never "take
+/// your medicine").
+enum ReminderCategory {
+  MEDICATION
+  APPOINTMENT
+  DAILY_ROUTINE
+  COGNITIVE_ACTIVITY
+  FAMILY
+  OTHER
+}
+
+/// How a reminder repeats. Deliberately small — a wall-clock time plus
+/// one of these four patterns covers a daily routine without a general
+/// scheduling engine. WEEKLY carries a weekday set, so "every Monday"
+/// and "Mon–Fri" are both WEEKLY with different `weekdays`.
+enum RecurrenceType {
+  ONCE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+/// Two levels only. IMPORTANT reminders may raise a caregiver alert
+/// when missed; NORMAL ones do not. Nothing is ever "critical".
+enum ReminderPriority {
+  NORMAL
+  IMPORTANT
+}
+
+/// The lifecycle of one materialised reminder occurrence. A medication
+/// reminder marked DONE means "acknowledged", never "medication taken"
+/// — the app cannot know that and never claims it.
+enum ReminderLogStatus {
+  PENDING
+  DONE
+  SKIPPED
+  SNOOZED
+  MISSED
+}
+
+/// Alert importance, for the caregiver. Three calm levels; normal
+/// performance changes are ATTENTION at most, never "critical".
+enum AlertSeverity {
+  INFO
+  ATTENTION
+  IMPORTANT
+}
+
+/// What produced an alert. Each maps to neutral, non-medical copy.
+enum AlertType {
+  REMINDER_MISSED
+  INACTIVITY
+  PERFORMANCE_CHANGE
+  ACTIVITY_DIFFICULTY
+  REMINDER_UPCOMING
+  DAILY_COMPLETE
+}
+
+/// Alert resolution state. DISMISSED and RESOLVED are kept rather than
+/// deleted, so the audit trail survives a caregiver tidying their list.
+enum AlertStatus {
+  UNREAD
+  READ
+  RESOLVED
+  DISMISSED
+}
+
+/// Optional soft category for a caregiver's free-text observation.
+/// Never converted into a medical conclusion.
+enum NoteCategory {
+  GENERAL
+  MOOD
+  ACTIVITY
+  SLEEP
+  APPETITE
+  OTHER
+}
+
 // ---------------------------- people ----------------------------
 
 /// An elderly user. Intentionally minimal: onboarding asks for a
@@ -109,6 +191,13 @@ model User {
   caregiverLinks CaregiverLink[]
   memories       PersonalMemory[]
 
+  // Phase 4
+  reminders         Reminder[]
+  reminderLogs      ReminderLog[]
+  notes             CaregiverNote[]
+  alerts            Alert[]
+  emergencyContacts EmergencyContact[]
+
   @@index([createdAt])
 }
 
@@ -131,6 +220,18 @@ model UserPreference {
   autoReadInstructions Boolean    @default(false)
   speechRate           SpeechRate @default(NORMAL)
 
+  // Phase 4 — the timezone reminders are scheduled in. Reminders store
+  // a wall-clock time and are materialised into instants against this
+  // zone, so "08:00 medication" stays at 08:00 local. Defaults to the
+  // app's home region; a caregiver can correct it.
+  timeZone String @default("Asia/Kolkata")
+
+  // Phase 4 — elder notification experience. All calm by default;
+  // spoken reminders additionally require voiceEnabled.
+  reminderVoice     Boolean @default(true) // speak a reminder aloud
+  autoReadReminders Boolean @default(false) // read the reminder text without a tap
+  notificationSound Boolean @default(true)
+
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -141,13 +242,13 @@ model UserPreference {
 /// ones marked enabled. Images are stored outside the web root and
 /// served through an authenticated route (see /api/memories image).
 model PersonalMemory {
-  id          String         @id @default(cuid())
-  userId      String // the elder this memory belongs to
-  caregiverId String // the caregiver who added it
-  category    MemoryCategory
-  title       String // e.g. a person's name, a place name
+  id           String         @id @default(cuid())
+  userId       String // the elder this memory belongs to
+  caregiverId  String // the caregiver who added it
+  category     MemoryCategory
+  title        String // e.g. a person's name, a place name
   relationship String? // e.g. "Daughter" — for PERSON cards
-  description String? // a short, gentle note
+  description  String? // a short, gentle note
 
   /// Path to the stored image on disk, relative to the private
   /// storage root. Never a public URL. Null when there is no photo.
@@ -176,8 +277,11 @@ model Caregiver {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  links    CaregiverLink[]
-  memories PersonalMemory[]
+  links      CaregiverLink[]
+  memories   PersonalMemory[]
+  reminders  Reminder[]
+  notes      CaregiverNote[]
+  preference CaregiverPreference?
 }
 
 /// Many-to-many relationship carrying its own metadata.
@@ -250,13 +354,13 @@ model GameResult {
   id        String @id @default(cuid())
   sessionId String @unique
 
-  score         Int // 0-100
-  accuracy      Float // 0-1
-  stars         Int // 0-5, presentation only
-  correctCount  Int    @default(0)
+  score          Int // 0-100
+  accuracy       Float // 0-1
+  stars          Int // 0-5, presentation only
+  correctCount   Int   @default(0)
   incorrectCount Int   @default(0)
-  mistakes      Int    @default(0)
-  hints         Int    @default(0)
+  mistakes       Int   @default(0)
+  hints          Int   @default(0)
 
   totalResponseTimeMs Int @default(0)
   avgResponseTimeMs   Int @default(0)
@@ -267,4 +371,159 @@ model GameResult {
   createdAt DateTime @default(now())
 
   session GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// -------------------- Phase 4: reminders --------------------
+
+/// A reminder DEFINITION: what to remind about and when it repeats.
+/// The actual dated events live in `ReminderLog`, so history is kept
+/// even after a definition changes. Created by a caregiver for the
+/// elder they are linked to.
+///
+/// Timezone: `timeMinutes` is a wall-clock time (minutes past local
+/// midnight) in the owner's `UserPreference.timeZone`. Occurrences are
+/// materialised into UTC instants against that zone (see
+/// lib/reminders/recurrence.ts), never assumed to be UTC or server
+/// time.
+model Reminder {
+  id          String  @id @default(cuid())
+  userId      String // the elder this reminder is for
+  caregiverId String? // the caregiver who created it; null if system-made
+
+  title       String
+  description String?
+  category    ReminderCategory @default(OTHER)
+  priority    ReminderPriority @default(NORMAL)
+
+  /// Minutes past local midnight, 0–1439.
+  timeMinutes Int
+  recurrence  RecurrenceType @default(ONCE)
+  /// For WEEKLY: weekdays that fire, 0 (Sunday) … 6 (Saturday).
+  weekdays    Int[]          @default([])
+  /// For MONTHLY: day of month, 1–31 (clamped to the month's length).
+  monthDay    Int?
+  /// Local calendar day the schedule begins (and the exact day for ONCE).
+  startDate   DateTime
+  /// Optional last local calendar day a recurring reminder fires.
+  endDate     DateTime?
+
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caregiver Caregiver?    @relation(fields: [caregiverId], references: [id], onDelete: SetNull)
+  logs      ReminderLog[]
+
+  @@index([userId, enabled])
+  @@index([caregiverId])
+}
+
+/// One dated occurrence of a reminder and how it was answered. Separated
+/// from the definition so reporting has real events to count, and so a
+/// reminder edited today does not rewrite yesterday. Materialised lazily
+/// (no cron): opening a reminder view syncs the occurrences due so far.
+model ReminderLog {
+  id             String            @id @default(cuid())
+  reminderId     String
+  userId         String // denormalised for per-elder indexing
+  /// The exact UTC instant this occurrence was scheduled for.
+  scheduledFor   DateTime
+  status         ReminderLogStatus @default(PENDING)
+  acknowledgedAt DateTime?
+  /// When SNOOZED ("remind me later"), when to surface it again.
+  snoozedUntil   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reminder Reminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reminderId, scheduledFor])
+  @@index([userId, scheduledFor])
+  @@index([userId, status])
+}
+
+/// A caregiver's free-text observation about the elder. Kept as written;
+/// never parsed into a medical conclusion.
+model CaregiverNote {
+  id          String       @id @default(cuid())
+  userId      String
+  caregiverId String
+  date        DateTime     @default(now())
+  body        String
+  category    NoteCategory @default(GENERAL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([caregiverId])
+}
+
+/// A meaningful, de-duplicated signal for the caregiver. `dedupeKey`
+/// makes each condition unique per elder, so the same missed morning is
+/// one alert, not a stream. Dismissed/resolved alerts are retained.
+model Alert {
+  id        String        @id @default(cuid())
+  userId    String
+  type      AlertType
+  severity  AlertSeverity @default(INFO)
+  title     String
+  body      String
+  status    AlertStatus   @default(UNREAD)
+  /// Stable identity for a condition, e.g. "missed:<date>" — enforced
+  /// unique per elder so signal never becomes noise.
+  dedupeKey String
+
+  createdAt             DateTime  @default(now())
+  readAt                DateTime?
+  resolvedAt            DateTime?
+  resolvedByCaregiverId String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+/// An emergency contact the elder can reach with one tap. This is a
+/// contact card and a call/dial action only — Cognisaarthi never claims
+/// to have contacted anyone or dispatched help.
+model EmergencyContact {
+  id           String @id @default(cuid())
+  userId       String
+  name         String
+  phone        String
+  relationship String @default("Family member")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Caregiver-side notification preferences. In-app is the only delivery
+/// channel in Phase 4; these gate what a caregiver is shown, and are the
+/// seam future channels (push, email) would read.
+model CaregiverPreference {
+  id          String @id @default(cuid())
+  caregiverId String @unique
+
+  reminderNotifications      Boolean @default(true)
+  cognitiveActivityReminders Boolean @default(true)
+  alertNotifications         Boolean @default(true)
+  weeklySummary              Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
 }

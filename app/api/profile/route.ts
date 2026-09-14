@@ -34,6 +34,10 @@ export async function PATCH(request: Request) {
     voiceEnabled,
     autoReadInstructions,
     speechRate,
+    timeZone,
+    reminderVoice,
+    autoReadReminders,
+    notificationSound,
   } = parsed.data;
 
   // Preference fields shared by create and update.
@@ -45,6 +49,10 @@ export async function PATCH(request: Request) {
     ...(voiceEnabled !== undefined && { voiceEnabled }),
     ...(autoReadInstructions !== undefined && { autoReadInstructions }),
     ...(speechRate !== undefined && { speechRate }),
+    ...(timeZone !== undefined && { timeZone }),
+    ...(reminderVoice !== undefined && { reminderVoice }),
+    ...(autoReadReminders !== undefined && { autoReadReminders }),
+    ...(notificationSound !== undefined && { notificationSound }),
   };
 
   await prisma.user.update({

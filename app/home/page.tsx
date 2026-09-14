@@ -1,4 +1,4 @@
-import { Bell, Brain, CircleCheck, Heart, Mic } from "lucide-react";
+import { Bell, Brain, CalendarDays, CircleCheck, Heart, LifeBuoy } from "lucide-react";
 
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -112,14 +112,20 @@ export default async function HomePage() {
             Icon={Bell}
             tone="tea"
           />
-          {/* Voice is not built. It is shown, plainly switched off,
-              rather than hidden or faked. */}
           <QuickAction
-            href="#"
-            label={dict.navTalk}
-            Icon={Mic}
-            comingSoon
-            comingSoonLabel={dict.comingSoon}
+            href="/routine"
+            label={dict.navRoutine}
+            Icon={CalendarDays}
+            tone="secondary"
+          />
+        </div>
+
+        <div className="mt-3">
+          <QuickAction
+            href="/help"
+            label={dict.sosButton}
+            Icon={LifeBuoy}
+            tone="primary"
           />
         </div>
       </section>
