@@ -180,7 +180,7 @@ export default async function CaregiverDashboard() {
           <h2 className="font-serif text-2xl font-semibold">{cg.needsAttention}</h2>
           <Link
             href="/caregiver/alerts"
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-base font-semibold text-primary transition-colors hover:bg-primary-soft"
+            className="inline-flex min-h-[2.75rem] items-center gap-1.5 rounded-lg px-3 py-2 text-base font-semibold text-primary transition-colors hover:bg-primary-soft"
           >
             {cg.allAlerts}
             <ArrowRight className="size-4" aria-hidden />

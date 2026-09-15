@@ -100,6 +100,7 @@ function snapshot(overrides: Partial<OfflineSnapshot> = {}): OfflineSnapshot {
     reminderLogs: [],
     memories: [],
     sessions: [],
+    memoryRecalls: [],
     ...overrides,
   };
 }

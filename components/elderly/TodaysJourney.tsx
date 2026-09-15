@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Check, Play, Sparkles } from "lucide-react";
+import { ChevronRight, Check, Heart, Play, Sparkles } from "lucide-react";
 import type { Language } from "@prisma/client";
 
 import { LinkButton } from "@/components/ui/Button";
@@ -34,16 +34,26 @@ export function TodaysJourney({
   completedGameIds,
   language,
   dict,
+  memoryLane,
 }: {
   plan: DailyPlan;
   completedGameIds: Set<string>;
   language: Language;
   dict: Dict;
+  /**
+   * Memory Lane's place in the day, when there is one.
+   *
+   * An OPTIONAL step, never counted towards the day's goal and never
+   * marked overdue. Memory Lane is a few minutes with photographs of
+   * your family; making it a duty that can be failed would be the
+   * fastest way to make somebody stop opening it.
+   */
+  memoryLane?: { total: number; dueCount: number };
 }) {
   const pending = plan.activities;
   const done = [...completedGameIds];
 
-  if (pending.length === 0 && done.length === 0) return null;
+  if (pending.length === 0 && done.length === 0 && !memoryLane) return null;
 
   const target = pending[0] ?? null;
   const totalSteps = done.length + pending.length;
@@ -118,12 +128,26 @@ export function TodaysJourney({
           )}
         </div>
 
+        {/* Memory Lane, offered beneath the day rather than inside it.
+            Separated by a rule because it is a different KIND of thing
+            from the activities above — those are brain activities the
+            plan chose; this is time with your own photographs. */}
+        {memoryLane ? (
+          <>
+            <hr className="rule-fade mt-6" />
+            <MemoryLaneStep dict={dict} summary={memoryLane} />
+          </>
+        ) : null}
+
         {/* An optional extra, offered and never required. */}
         {plan.optionalExtra && pending.length > 0 ? (
           <p className="mt-4 text-center">
             <Link
               href={`/games/${plan.optionalExtra.gameId}`}
-              className="inline-block rounded-lg px-2 py-1 text-base font-semibold text-text-muted underline underline-offset-4 transition-colors hover:text-primary"
+              // min-h clears the 44px touch floor. It read as 41px,
+              // which on the elder side is the one measurement this
+              // interface is not allowed to miss.
+              className="inline-flex min-h-[2.75rem] items-center rounded-lg px-3 py-2 text-base font-semibold text-text-muted underline underline-offset-4 transition-colors hover:text-primary"
             >
               {dict.journeyOptionalExtra}
             </Link>
@@ -131,6 +155,77 @@ export function TodaysJourney({
         ) : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * Memory Lane's row.
+ *
+ * Three different sentences, because three different things can be
+ * true and flattening them would say something false:
+ *
+ *  - nothing has been added yet → an invitation, addressed to whoever
+ *    is holding the tablet, that does not read as the person's own
+ *    omission;
+ *  - memories exist and some are ready → an offer;
+ *  - memories exist and none are ready → a reassurance, NOT a nudge.
+ *    Spaced retrieval works by waiting, so "come back later" is the
+ *    feature behaving correctly, and it must not look like a chore
+ *    left undone.
+ */
+function MemoryLaneStep({
+  dict,
+  summary,
+}: {
+  dict: Dict;
+  summary: { total: number; dueCount: number };
+}) {
+  const empty = summary.total === 0;
+  const ready = summary.dueCount > 0;
+
+  return (
+    <Link
+      href={empty ? "/memories" : "/memories/lane"}
+      className={cn(
+        "panel-interactive group mt-4 flex items-center gap-4 rounded-2xl border px-4 py-4",
+        ready
+          ? "border-secondary/30 bg-secondary-soft/50 shadow-soft"
+          : "border-border bg-surface-alt/50",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-14 shrink-0 items-center justify-center rounded-2xl border-2",
+          ready
+            ? "border-secondary/35 bg-secondary-soft"
+            : "border-border bg-surface",
+        )}
+      >
+        <Heart
+          className={cn("size-7", ready ? "text-secondary" : "text-text-muted")}
+          strokeWidth={2}
+        />
+      </span>
+
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-lg leading-tight font-semibold">
+          {dict.laneTitle}
+        </span>
+        <span className="mt-0.5 text-base text-text-muted">
+          {empty
+            ? dict.laneEmptyTitle
+            : ready
+              ? dict.laneJourneyCaption
+              : dict.laneNothingDueTitle}
+        </span>
+      </span>
+
+      <ChevronRight
+        className="size-6 shrink-0 text-text-muted transition-transform duration-200 ease-gentle group-hover:translate-x-0.5"
+        aria-hidden
+      />
+    </Link>
   );
 }
 

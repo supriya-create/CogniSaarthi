@@ -9,6 +9,7 @@ import {
   Images,
   NotebookPen,
   Settings,
+  Sprout,
   TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -40,6 +41,11 @@ const ITEMS: {
   { href: "/caregiver/notes", labelKey: "navNotes", Icon: NotebookPen },
   { href: "/caregiver/summary", labelKey: "navSummary", Icon: TrendingUp },
   { href: "/caregiver/memories", labelKey: "navMemories", Icon: Images },
+  {
+    href: "/caregiver/memory-lane",
+    labelKey: "navMemoryLane",
+    Icon: Sprout,
+  },
   { href: "/caregiver/settings", labelKey: "navSettings", Icon: Settings },
 ];
 
@@ -106,7 +112,12 @@ export function CaregiverNavBar({ language }: { language: Language }) {
       aria-label={dict.navSections}
       className="scrollbar-none overflow-x-auto border-b border-border bg-surface/70 lg:hidden"
     >
-      <ul className="mx-auto flex max-w-6xl gap-1.5 px-5 py-2.5">
+      {/* `w-max` is what makes this actually scroll. Without it the
+          list resolves to the container's width, its pills overflow
+          the list rather than the scroller, and the whole document
+          grows sideways instead — 239px of it, once Memory Lane made
+          this an eight-item row. */}
+      <ul className="mx-auto flex w-max max-w-6xl gap-1.5 px-5 py-2.5">
         {ITEMS.map(({ href, labelKey, Icon }) => {
           const active = isCurrent(pathname, href);
           return (

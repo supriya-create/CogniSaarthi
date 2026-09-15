@@ -296,8 +296,57 @@ model PersonalMemory {
   caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
 
   recallEvents MemoryRecallEvent[]
+  audio        MemoryAudio?
 
   @@index([userId, enabled])
+  @@index([caregiverId])
+}
+
+/// A caregiver's own voice, recorded for one memory — "Ma, this is
+/// Meera." Played during Memory Lane's errorless correction, where a
+/// familiar voice does something a synthesised one cannot.
+///
+/// A SEPARATE MODEL rather than an `audioPath` column on
+/// PersonalMemory, and the reason is ownership rather than tidiness.
+/// A recording has facts of its own that a path column cannot carry:
+/// WHICH caregiver recorded it (a family may have three, and "whose
+/// voice is this?" is a question somebody will ask), what format it
+/// is in, how long it runs, and when it was made. It also has its own
+/// lifecycle — replacing or deleting the voice must not be an edit to
+/// the memory row, and a memory must be able to exist with no voice
+/// without that being modelled as a null in the middle of its own
+/// record.
+///
+/// Storage follows the image rule exactly: bytes live OUTSIDE the web
+/// root under ./storage, `path` is a bare filename, and the only way
+/// to read one is an authenticated route that checks the requester is
+/// the elder it belongs to or a linked caregiver. There is no public
+/// URL and the service worker never caches it.
+model MemoryAudio {
+  id       String @id @default(cuid())
+  memoryId String @unique
+
+  /// The caregiver whose voice this is. Kept as an optional relation
+  /// so a departing caregiver's recording is not silently destroyed
+  /// while the memory still points at it — the elder would lose the
+  /// voice without anybody choosing that.
+  caregiverId String?
+
+  /// Bare filename under the private audio root. Never a URL.
+  path     String
+  mimeType String
+  bytes    Int
+  /// Recording length in milliseconds, as reported by the recorder.
+  /// Null when the browser did not give us one — better than 0, which
+  /// would render as an empty clip.
+  durationMs Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memory    PersonalMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  caregiver Caregiver?     @relation(fields: [caregiverId], references: [id], onDelete: SetNull)
+
   @@index([caregiverId])
 }
 
@@ -311,11 +360,12 @@ model Caregiver {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  links      CaregiverLink[]
-  memories   PersonalMemory[]
-  reminders  Reminder[]
-  notes      CaregiverNote[]
-  preference CaregiverPreference?
+  links        CaregiverLink[]
+  memories     PersonalMemory[]
+  reminders    Reminder[]
+  notes        CaregiverNote[]
+  preference   CaregiverPreference?
+  memoryAudios MemoryAudio[]
 }
 
 /// Many-to-many relationship carrying its own metadata.
@@ -654,6 +704,42 @@ enum MemoryRecallOutcome {
   /// could not remember her daughter", which is a false record of a
   /// very sensitive thing.
   SKIPPED
+  /// Memory Lane's errorless correction: the answer did not come, so
+  /// it was shown, gently, and the memory comes back shortly.
+  ///
+  /// A third value rather than a flavour of NOT_RECOGNISED, because
+  /// the two are different facts. NOT_RECOGNISED is "they chose the
+  /// wrong one"; ASSISTED is "we did not make them choose at all".
+  /// The scheduler treats them the same — both step back — but a
+  /// caregiver reading a timeline is owed the distinction, and once
+  /// they are merged in the database they can never be separated
+  /// again.
+  ASSISTED
+}
+
+/// How a memory was being ASKED ABOUT, as distinct from how the answer
+/// arrived (`MemoryRecallMode`).
+///
+/// Kept because the modes are not equally hard and averaging them
+/// would be meaningless. Naming a photograph in front of you and
+/// recalling a name with no photograph are different tasks, and a
+/// record that cannot tell them apart cannot say anything true about
+/// a run of prompts.
+///
+/// Nullable on the event: rows written before Memory Lane existed were
+/// all plain recognition, but they were not RECORDED as such, and
+/// back-filling a value nobody observed would be inventing data.
+enum MemoryPresentationMode {
+  /// Photograph shown: "Who is this?"
+  PERSON_RECOGNITION
+  /// No photograph: "What is your daughter's name?"
+  NAME_RECALL
+  /// Photograph shown: "Meera is your…"
+  RELATIONSHIP_RECALL
+  /// Photograph shown: "Do you remember this place?"
+  PLACE_RECOGNITION
+  /// Photograph shown: "Do you remember this?"
+  CONTEXT_RECALL
 }
 
 /// How the answer arrived. Kept because the two are not comparable:
@@ -667,12 +753,17 @@ enum MemoryRecallMode {
 
 /// One answer to one personal-recall prompt.
 ///
-/// This is the foundation Memory Lane (spaced retrieval) will build
-/// on, and it is deliberately the SMALLEST thing that is useful: what
-/// was shown, how it went, how it was answered, and when. No interval,
-/// no schedule, no retention state — those belong to the scheduler
-/// that does not exist yet, and inventing their columns now would be
-/// guessing at a design rather than recording a fact.
+/// This is the foundation Memory Lane (spaced retrieval) builds on,
+/// and it stays the smallest thing that is useful: what was shown, how
+/// it went, how it was answered, and when.
+///
+/// Memory Lane added two columns and NOT a retention state. The
+/// schedule position a memory is in is DERIVED from these events by
+/// `lib/memories/retrieval.ts`, never stored: a stored copy would be a
+/// second source of truth that a device offline for a week is
+/// guaranteed to disagree with. `intervalStep` below is not that — it
+/// records the step a prompt was PRESENTED at, which is a fact about a
+/// moment that has passed, not a running total.
 model MemoryRecallEvent {
   id     String @id @default(cuid())
   userId String
@@ -689,6 +780,17 @@ model MemoryRecallEvent {
 
   outcome MemoryRecallOutcome
   mode    MemoryRecallMode
+
+  /// How the memory was being asked about. Null for events recorded
+  /// before Memory Lane existed — see the enum.
+  presentation MemoryPresentationMode?
+
+  /// The index into `RETRIEVAL_INTERVALS_MS` this prompt was shown at,
+  /// so the caregiver timeline can print "Recognised — 3 days" from
+  /// the event itself rather than re-deriving a history it might get
+  /// subtly wrong. Null for events recorded before the schedule
+  /// existed, and for any prompt shown outside it.
+  intervalStep Int?
 
   /// How long the answer took. Null when it was not measured rather
   /// than zero, which would read as "answered instantly".

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit",

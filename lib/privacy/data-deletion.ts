@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
+import { deleteMemoryAudio } from "@/lib/memories/audio";
 import { deleteMemoryImage } from "@/lib/memories/storage";
 import { recordAudit } from "@/lib/privacy/audit";
 
@@ -21,10 +22,16 @@ import { recordAudit } from "@/lib/privacy/audit";
  *
  *  1. **Memory image files.** Photographs live on disk under
  *     ./storage/memory-images, not in PostgreSQL. A cascade deletes the
- *     PersonalMemory row and orphans the JPEG — the single most
- *     sensitive artefact in the product — leaving a family photo on
- *     disk with no record that it belongs to anyone. Files are removed
- *     FIRST here, before the rows that name them are gone.
+ *     PersonalMemory row and orphans the JPEG — among the most
+ *     sensitive artefacts in the product — leaving a family photo on
+ *     disk with no record that it belongs to anyone.
+ *
+ *     Since Memory Lane the same is true of the familiar-voice
+ *     RECORDINGS under ./storage/memory-audio. `MemoryAudio` cascades
+ *     away with its memory, which makes the leak completely invisible:
+ *     the database looks clean and a recording of somebody's daughter
+ *     saying their name is still on the disk. Both kinds are read out
+ *     before the rows are deleted and unlinked afterwards.
  *
  *  2. **AuditEvent.** Has no foreign key and is not cascaded, by
  *     design. The record that a deletion happened must survive the
@@ -49,6 +56,9 @@ export interface DeletionPlan {
     sessions: number;
     memories: number;
     memoryImages: number;
+    memoryRecordings: number;
+    /** Answers given in Memory Lane. Cascade from User. */
+    recallEvents: number;
     reminders: number;
     reminderLogs: number;
     notes: number;
@@ -80,6 +90,8 @@ export async function planAccountDeletion(
     sessions,
     memories,
     memoryImages,
+    memoryRecordings,
+    recallEvents,
     reminders,
     reminderLogs,
     notes,
@@ -93,6 +105,8 @@ export async function planAccountDeletion(
     prisma.personalMemory.count({
       where: { userId, imagePath: { not: null } },
     }),
+    prisma.memoryAudio.count({ where: { memory: { userId } } }),
+    prisma.memoryRecallEvent.count({ where: { userId } }),
     prisma.reminder.count({ where: { userId } }),
     prisma.reminderLog.count({ where: { userId } }),
     prisma.caregiverNote.count({ where: { userId } }),
@@ -108,6 +122,8 @@ export async function planAccountDeletion(
       sessions,
       memories,
       memoryImages,
+      memoryRecordings,
+      recallEvents,
       reminders,
       reminderLogs,
       notes,
@@ -129,9 +145,10 @@ export async function planAccountDeletion(
  *
  * Order matters and is not incidental:
  *
- *   1. Read the image filenames while the rows still exist.
+ *   1. Read every stored filename — photographs AND voice recordings —
+ *      while the rows that name them still exist.
  *   2. Delete the User row — one transaction, cascades do the rest.
- *   3. Unlink the image files.
+ *   3. Unlink the files.
  *
  * Files are removed AFTER the database commits, so a failed delete
  * cannot leave rows pointing at photographs that are already gone. The
@@ -144,28 +161,48 @@ export async function deleteAccount(userId: string): Promise<{
   plan: DeletionPlan | null;
   imagesRemoved: number;
   imagesFailed: number;
+  recordingsRemoved: number;
+  recordingsFailed: number;
 }> {
-  const plan = await planAccountDeletion(userId);
-  if (!plan) {
-    return { deleted: false, plan: null, imagesRemoved: 0, imagesFailed: 0 };
-  }
+  const empty = {
+    imagesRemoved: 0,
+    imagesFailed: 0,
+    recordingsRemoved: 0,
+    recordingsFailed: 0,
+  };
 
-  const withImages = await prisma.personalMemory.findMany({
-    where: { userId, imagePath: { not: null } },
-    select: { imagePath: true },
+  const plan = await planAccountDeletion(userId);
+  if (!plan) return { deleted: false, plan: null, ...empty };
+
+  // Both kinds of file, read out together while the rows survive.
+  const withFiles = await prisma.personalMemory.findMany({
+    where: { userId },
+    select: { imagePath: true, audio: { select: { path: true } } },
   });
 
   await prisma.user.delete({ where: { id: userId } });
 
   let imagesRemoved = 0;
   let imagesFailed = 0;
-  for (const { imagePath } of withImages) {
-    if (!imagePath) continue;
-    try {
-      await deleteMemoryImage(imagePath);
-      imagesRemoved += 1;
-    } catch {
-      imagesFailed += 1;
+  let recordingsRemoved = 0;
+  let recordingsFailed = 0;
+
+  for (const memory of withFiles) {
+    if (memory.imagePath) {
+      try {
+        await deleteMemoryImage(memory.imagePath);
+        imagesRemoved += 1;
+      } catch {
+        imagesFailed += 1;
+      }
+    }
+    if (memory.audio) {
+      try {
+        await deleteMemoryAudio(memory.audio.path);
+        recordingsRemoved += 1;
+      } catch {
+        recordingsFailed += 1;
+      }
     }
   }
 
@@ -177,8 +214,17 @@ export async function deleteAccount(userId: string): Promise<{
       memoryCount: plan.counts.memories,
       imagesRemoved,
       imagesFailed,
+      recordingsRemoved,
+      recordingsFailed,
     },
   });
 
-  return { deleted: true, plan, imagesRemoved, imagesFailed };
+  return {
+    deleted: true,
+    plan,
+    imagesRemoved,
+    imagesFailed,
+    recordingsRemoved,
+    recordingsFailed,
+  };
 }

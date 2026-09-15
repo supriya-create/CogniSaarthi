@@ -11,6 +11,7 @@ import type {
   LocalMemoryRecall,
   LocalReminderLog,
   OfflineSnapshot,
+  SnapshotMemoryRecall,
   SnapshotSession,
 } from "@/lib/offline/types";
 
@@ -256,6 +257,7 @@ export async function applySnapshot(snapshot: OfflineSnapshot): Promise<void> {
 
   await mergeReminderLogs(snapshot);
   await mergeSessions(snapshot.sessions);
+  await mergeMemoryRecalls(snapshot.memoryRecalls ?? []);
 
   await db.setMeta(META_KEYS.contentVersion, snapshot.contentVersion);
   await db.setMeta(META_KEYS.snapshotAt, snapshot.snapshotAt);
@@ -306,6 +308,43 @@ async function mergeReminderLogs(snapshot: OfflineSnapshot): Promise<void> {
     }
     // Local wins → leave it PENDING so the queue still pushes it.
     byKey.delete(key);
+  }
+}
+
+/**
+ * Fold the server's recall history into the local store.
+ *
+ * Memory Lane's schedule is a fold over a memory's events, so a device
+ * needs the answers given on OTHER devices or it will treat a memory
+ * somebody has practised for a month as brand new.
+ *
+ * Both sides key on `clientEventId`, so this is a straightforward
+ * union with one rule: a local row still waiting to be pushed is never
+ * touched. It is the same event the server will shortly confirm, and
+ * overwriting its PENDING status here would retire it from the queue
+ * without it ever having been sent.
+ */
+async function mergeMemoryRecalls(
+  remote: readonly SnapshotMemoryRecall[],
+): Promise<void> {
+  const local = await allMemoryRecalls();
+  const byId = new Map(local.map((event) => [event.clientEventId, event]));
+
+  for (const event of remote) {
+    const existing = byId.get(event.clientEventId);
+    if (existing?.syncStatus === "PENDING") continue;
+
+    await db.put(STORES.memoryRecalls, {
+      clientEventId: event.clientEventId,
+      memoryId: event.memoryId,
+      outcome: event.outcome,
+      mode: event.mode,
+      presentation: event.presentation,
+      intervalStep: event.intervalStep,
+      responseTimeMs: event.responseTimeMs,
+      occurredAt: event.occurredAt,
+      syncStatus: "SYNCED",
+    } satisfies LocalMemoryRecall);
   }
 }
 

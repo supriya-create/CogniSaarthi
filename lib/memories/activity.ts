@@ -1,6 +1,7 @@
 import type { MemoryCategory } from "@prisma/client";
 
 import { shuffle } from "@/lib/game-engine/random";
+import { buildDistractors, type LabelledOption } from "@/lib/memories/options";
 
 /**
  * Building recall rounds from a person's own memories. Pure and
@@ -28,10 +29,7 @@ export type MemoryPromptKey =
   | "memoryWhatThing"
   | "memoryWhatMoment";
 
-export interface MemoryOption {
-  id: string;
-  label: string;
-}
+export type MemoryOption = LabelledOption;
 
 export interface MemoryRound {
   memoryId: string;
@@ -52,7 +50,7 @@ const PROMPT: Record<MemoryCategory, MemoryPromptKey> = {
 
 /** Neutral filler names/labels, only used when a person has too few
  *  memories to supply distractors. Kept ordinary and non-specific. */
-const FILLER: Record<MemoryCategory, string[]> = {
+export const FILLER: Record<MemoryCategory, string[]> = {
   PERSON: ["Ramen", "Bina", "Anil", "Mira", "Gopal"],
   PLACE: ["The market", "The garden", "The temple", "The river"],
   THING: ["A cup", "A book", "A basket", "A lamp"],
@@ -90,38 +88,28 @@ export function buildMemoryRounds(
   });
 }
 
+/**
+ * Distractors for one round.
+ *
+ * The rule itself lives in `options.ts` and is shared with Memory
+ * Lane, which asks the same shaped question over different labels.
+ * This function only says what "similar" and "label" mean HERE: same
+ * category, and the memory's title.
+ */
 function pickDistractors(
   target: MemoryItem,
   all: MemoryItem[],
 ): MemoryOption[] {
-  const need = OPTIONS_PER_ROUND - 1;
-
-  // Prefer other real memories, same category first, then any.
-  const sameCategory = all.filter(
-    (m) => m.id !== target.id && m.category === target.category,
+  return buildDistractors(
+    {
+      target,
+      pool: all,
+      idOf: (item) => item.id,
+      labelOf: (item) => item.title,
+      isSimilar: (item, t) => item.category === t.category,
+      filler: FILLER[target.category],
+      count: OPTIONS_PER_ROUND,
+    },
+    shuffle,
   );
-  const otherCategory = all.filter(
-    (m) => m.id !== target.id && m.category !== target.category,
-  );
-
-  const pool: MemoryOption[] = [];
-  const seenLabels = new Set([target.title.toLowerCase()]);
-
-  for (const m of [...shuffle(sameCategory), ...shuffle(otherCategory)]) {
-    if (pool.length >= need) break;
-    const key = m.title.toLowerCase();
-    if (seenLabels.has(key)) continue;
-    seenLabels.add(key);
-    pool.push({ id: m.id, label: m.title });
-  }
-
-  // Top up from neutral filler if the person has few memories.
-  for (const label of FILLER[target.category]) {
-    if (pool.length >= need) break;
-    if (seenLabels.has(label.toLowerCase())) continue;
-    seenLabels.add(label.toLowerCase());
-    pool.push({ id: `filler-${label}`, label });
-  }
-
-  return pool.slice(0, need);
 }

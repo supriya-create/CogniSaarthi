@@ -149,6 +149,13 @@ export interface CachedMemory {
   relationship: string | null;
   description: string | null;
   hasImage: boolean;
+  /**
+   * A caregiver has recorded a familiar voice for this memory. A flag,
+   * never the audio itself: like the photographs, recordings stay
+   * behind the authenticated route and are not written into a shared
+   * cache on a family tablet.
+   */
+  hasAudio: boolean;
 }
 
 // ---------------------------------------------------------------
@@ -167,11 +174,28 @@ export interface CachedMemory {
  * already knows, so a recall event on a shared tablet never holds a
  * family member's name or a description of a photograph.
  */
+export type LocalRecallOutcome =
+  | "RECOGNISED"
+  | "ASSISTED"
+  | "NOT_RECOGNISED"
+  | "SKIPPED";
+
+export type LocalPresentationMode =
+  | "PERSON_RECOGNITION"
+  | "NAME_RECALL"
+  | "RELATIONSHIP_RECALL"
+  | "PLACE_RECOGNITION"
+  | "CONTEXT_RECALL";
+
 export interface LocalMemoryRecall {
   clientEventId: string;
   memoryId: string;
-  outcome: "RECOGNISED" | "NOT_RECOGNISED" | "SKIPPED";
+  outcome: LocalRecallOutcome;
   mode: "CHOICE" | "VOICE";
+  /** How the memory was asked about. Null outside Memory Lane. */
+  presentation: LocalPresentationMode | null;
+  /** The schedule step this prompt was shown at. Null outside it. */
+  intervalStep: number | null;
   responseTimeMs: number | null;
   /** When the person answered, on this device (ISO). */
   occurredAt: string;
@@ -269,6 +293,32 @@ export interface SnapshotReminderLog {
 }
 
 /**
+ * A recall answer as the SERVER knows it.
+ *
+ * Carried in the snapshot because Memory Lane's schedule is derived by
+ * folding a memory's whole history, and history happens on more than
+ * one device. Without this, answering on a phone and then opening the
+ * tablet would show every memory as brand new — the tablet would have
+ * no events, so it would derive a fresh schedule and start asking
+ * about a photograph somebody recognised at thirty days as though
+ * they had never seen it.
+ *
+ * It carries no memory CONTENT: an id, an outcome and a time. The
+ * names and descriptions come down separately in `memories`, and only
+ * for memories this elder owns.
+ */
+export interface SnapshotMemoryRecall {
+  clientEventId: string;
+  memoryId: string;
+  outcome: LocalRecallOutcome;
+  mode: "CHOICE" | "VOICE";
+  presentation: LocalPresentationMode | null;
+  intervalStep: number | null;
+  responseTimeMs: number | null;
+  occurredAt: string; // ISO
+}
+
+/**
  * Everything this device needs to keep working without a network.
  * Contains no credentials and nothing belonging to another user — the
  * server builds it from the authenticated session alone.
@@ -284,4 +334,7 @@ export interface OfflineSnapshot {
   reminderLogs: SnapshotReminderLog[];
   memories: CachedMemory[];
   sessions: SnapshotSession[];
+  /** Recall history, so Memory Lane's schedule survives a device
+   *  change and a week offline. */
+  memoryRecalls: SnapshotMemoryRecall[];
 }

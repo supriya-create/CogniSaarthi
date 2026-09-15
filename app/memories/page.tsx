@@ -1,4 +1,4 @@
-import { Images, Sparkles } from "lucide-react";
+import { Images, Sparkles, Sprout } from "lucide-react";
 import type { MemoryCategory } from "@prisma/client";
 
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { PageShell } from "@/components/layout/PageShell";
 import { LinkButton } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { OrchidSprig } from "@/components/ui/Decor";
+import { LeafSprig, OrchidSprig } from "@/components/ui/Decor";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { MemoryCard } from "@/components/elderly/MemoryCard";
 import { requireUser } from "@/lib/auth/current-user";
@@ -68,8 +68,40 @@ export default async function MemoriesPage() {
         </div>
       ) : (
         <>
+          {/* Two ways to practise, and the difference between them is
+              the point rather than an accident:
+
+              MEMORY LANE is the scheduled one. It decides WHICH
+              memories to show and WHEN, widening the gap each time one
+              is recognised, and it never lets somebody sit with a
+              wrong answer. It leads, because it is the one that does
+              something for them.
+
+              "Do you remember?" is free practice over whatever has a
+              photograph. It exists because spaced retrieval has quiet
+              days by design, and somebody who wants to look through
+              their photographs on one of those should not be told to
+              come back tomorrow. */}
+          <section className="panel surface-glow relative isolate mt-8 overflow-hidden border-primary/20 p-5 sm:p-6">
+            <LeafSprig className="pointer-events-none absolute -top-8 -right-6 !size-44 rotate-12 opacity-[0.16]" />
+            <div className="relative flex flex-wrap items-center justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="flex items-center gap-2.5 font-serif text-xl font-semibold">
+                  <Sprout className="size-5 shrink-0 text-primary" aria-hidden />
+                  {dict.laneTitle}
+                </h2>
+                <p className="mt-1.5 text-base text-text-muted">
+                  {dict.laneSubtitle}
+                </p>
+              </div>
+              <LinkButton href="/memories/lane" size="md">
+                {dict.laneOpen}
+              </LinkButton>
+            </div>
+          </section>
+
           {withPhotos.length >= 1 ? (
-            <section className="panel relative isolate mt-8 overflow-hidden border-secondary/25 bg-secondary-soft p-5 sm:p-6">
+            <section className="panel relative isolate mt-4 overflow-hidden border-secondary/25 bg-secondary-soft p-5 sm:p-6">
               <OrchidSprig className="pointer-events-none absolute -top-6 -right-6 !size-40 opacity-30" />
               <div className="relative flex flex-wrap items-center justify-between gap-4">
                 <div className="min-w-0">

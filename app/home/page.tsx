@@ -5,6 +5,7 @@ import {
   LifeBuoy,
   ListChecks,
   Shapes,
+  Sprout,
 } from "lucide-react";
 
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
@@ -21,6 +22,7 @@ import {
   getTodaysCompletedCount,
 } from "@/lib/db/queries";
 import { getDailyPlan, getIntelligenceSnapshot } from "@/lib/intelligence/server";
+import { getLaneSummary } from "@/lib/memories/server";
 import { elderProgressKey } from "@/lib/intelligence/explanations";
 import { getDict, localeTag } from "@/lib/i18n/dictionaries";
 import { formatDayLabel, greetingKey } from "@/lib/utils/date";
@@ -35,11 +37,15 @@ export default async function HomePage() {
   // success — and quietly shortens the day when activities have been
   // hard work, or when someone is coming back after a gap. Difficulty
   // is still decided by the Phase 2 engine when each activity opens.
-  const [completedToday, playedToday, plan, snapshot] = await Promise.all([
+  const [completedToday, playedToday, plan, snapshot, lane] = await Promise.all([
     getTodaysCompletedCount(user.id),
     getGameIdsCompletedToday(user.id),
     getDailyPlan(user.id),
     getIntelligenceSnapshot(user.id),
+    // Counts only. The home screen has no business carrying somebody's
+    // family photographs and names in its payload to decide whether to
+    // show one line of text.
+    getLaneSummary(user.id),
   ]);
 
   const goalMet = completedToday >= DAILY_GOAL;
@@ -81,6 +87,7 @@ export default async function HomePage() {
           completedGameIds={playedToday}
           language={language}
           dict={dict}
+          memoryLane={{ total: lane.total, dueCount: lane.dueCount }}
         />
       </div>
 
@@ -101,6 +108,13 @@ export default async function HomePage() {
             description={dict.memoriesBody}
             Icon={Heart}
             tone="secondary"
+          />
+          <QuickAction
+            href="/memories/lane"
+            label={dict.laneTitle}
+            description={dict.laneSubtitle}
+            Icon={Sprout}
+            tone="sage"
           />
           <QuickAction
             href="/reminders"

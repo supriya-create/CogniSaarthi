@@ -3,32 +3,54 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { ImageIcon, Pencil, Plus, Trash2, X } from "lucide-react";
-import type { MemoryCategory, PersonalMemory, Language } from "@prisma/client";
+import type { MemoryCategory, Language } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
-import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
+import { VoiceRecorder } from "@/components/caregiver/VoiceRecorder";
+import {
+  getCaregiverDict,
+  fill,
+  type CaregiverDict,
+} from "@/lib/i18n/caregiver";
 import { cn } from "@/lib/utils/cn";
 
 /**
  * Caregiver-side management of one elder's personal memories: add,
- * edit, delete, and choose whether each may be used in recall
- * activities. Photos upload through the authenticated API; nothing
- * here is ever a public URL.
+ * edit, delete, choose whether each may be used in recall activities,
+ * and record a familiar voice for it.
+ *
+ * Photos and recordings both upload through authenticated API routes;
+ * nothing here is ever a public URL.
+ *
+ * Phase 8 translated this screen. It had been the last caregiver
+ * surface with English written straight into the markup, which on a
+ * dashboard a daughter in Jorhat reads in Assamese is not a small gap
+ * — the page around it was translated, so the untranslated words read
+ * as a bug rather than as a limitation.
  */
 
-const CATEGORIES: { value: MemoryCategory; label: string }[] = [
-  { value: "PERSON", label: "Person" },
-  { value: "PLACE", label: "Place" },
-  { value: "THING", label: "Thing" },
-  { value: "MOMENT", label: "Moment" },
-];
+const CATEGORIES: MemoryCategory[] = ["PERSON", "PLACE", "THING", "MOMENT"];
 
-const CATEGORY_LABEL: Record<MemoryCategory, string> = {
-  PERSON: "Person",
-  PLACE: "Place",
-  THING: "Thing",
-  MOMENT: "Moment",
-};
+function categoryLabel(dict: CaregiverDict, category: MemoryCategory): string {
+  return dict[`memoryCat${category}` as const];
+}
+
+/**
+ * What this component needs about a memory. A local shape rather than
+ * Prisma's `PersonalMemory`, because it also needs to know whether a
+ * recording exists — and because a client component has no business
+ * receiving a database row wholesale.
+ */
+export interface ManagedMemory {
+  id: string;
+  category: MemoryCategory;
+  title: string;
+  relationship: string | null;
+  description: string | null;
+  enabled: boolean;
+  hasImage: boolean;
+  hasAudio: boolean;
+}
 
 type Draft = {
   id: string | null;
@@ -53,7 +75,7 @@ export function MemoryManager({
   userName,
   language,
 }: {
-  memories: PersonalMemory[];
+  memories: ManagedMemory[];
   userName: string;
   language: Language;
 }) {
@@ -69,7 +91,7 @@ export function MemoryManager({
     setDraft({ ...EMPTY });
   }
 
-  function openEdit(memory: PersonalMemory) {
+  function openEdit(memory: ManagedMemory) {
     setError(null);
     setDraft({
       id: memory.id,
@@ -84,7 +106,7 @@ export function MemoryManager({
   async function save() {
     if (!draft) return;
     if (draft.title.trim().length === 0) {
-      setError("Please give this memory a name or title.");
+      setError(dict.memoryNeedsTitle);
       return;
     }
     setSaving(true);
@@ -110,7 +132,7 @@ export function MemoryManager({
         const data = (await response.json().catch(() => ({}))) as {
           error?: string;
         };
-        setError(messageFor(data.error));
+        setError(messageFor(dict, data.error));
         setSaving(false);
         return;
       }
@@ -118,13 +140,15 @@ export function MemoryManager({
       setSaving(false);
       router.refresh();
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(dict.somethingWentWrong);
       setSaving(false);
     }
   }
 
-  async function remove(memory: PersonalMemory) {
-    if (!confirm(`Delete "${memory.title}"? This cannot be undone.`)) return;
+  async function remove(memory: ManagedMemory) {
+    if (!confirm(fill(dict.memoryDeleteConfirm, { title: memory.title }))) {
+      return;
+    }
     await fetch(`/api/caregiver/memories/${memory.id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -133,7 +157,9 @@ export function MemoryManager({
     <section className="mt-9">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-serif text-2xl font-semibold">{dict.memoryBank}</h2>
+          <h2 className="font-serif text-2xl font-semibold">
+            {dict.memoryBank}
+          </h2>
           <p className="mt-1 text-base text-text-muted">
             {fill(dict.memoryBankSubtitle, { name: userName })}
           </p>
@@ -144,13 +170,14 @@ export function MemoryManager({
             onClick={openAdd}
             icon={<Plus className="size-5" aria-hidden />}
           >
-            Add memory
+            {dict.addMemory}
           </Button>
         ) : null}
       </div>
 
       {draft ? (
         <MemoryForm
+          dict={dict}
           draft={draft}
           setDraft={setDraft}
           fileRef={fileRef}
@@ -163,72 +190,83 @@ export function MemoryManager({
 
       {memories.length === 0 && !draft ? (
         <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-12 text-center text-lg text-text-muted">
-          No memories yet. Add a family member or a favourite place to begin.
+          {dict.memoryNoneYet}
         </p>
       ) : (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
           {memories.map((memory) => (
-            <li
-              key={memory.id}
-              className="flex gap-4 panel p-4 shadow-soft"
-            >
-              <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-surface-alt">
-                {memory.imagePath ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/api/memories/${memory.id}/image`}
-                    alt={memory.title}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <ImageIcon className="size-8 text-text-muted" aria-hidden />
-                )}
-              </span>
-
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="flex items-center gap-2">
-                  <span className="truncate text-lg font-semibold">
-                    {memory.title}
-                  </span>
-                  <span className="shrink-0 rounded-full border border-border bg-surface-alt px-2 py-0.5 text-xs font-medium text-text-muted">
-                    {CATEGORY_LABEL[memory.category]}
-                  </span>
-                </span>
-                {memory.relationship ? (
-                  <span className="text-sm text-text-muted">
-                    {memory.relationship}
-                  </span>
-                ) : null}
-                <span
-                  className={cn(
-                    "mt-1 text-xs font-medium",
-                    memory.enabled ? "text-success" : "text-text-muted",
+            <li key={memory.id} className="panel flex flex-col p-4 shadow-soft">
+              <div className="flex gap-4">
+                <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-surface-alt">
+                  {memory.hasImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`/api/memories/${memory.id}/image`}
+                      alt={memory.title}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon className="size-8 text-text-muted" aria-hidden />
                   )}
-                >
-                  {memory.enabled
-                    ? "✓ Available for memory activities"
-                    : "Hidden from activities"}
                 </span>
 
-                <div className="mt-auto flex gap-2 pt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openEdit(memory)}
-                    icon={<Pencil className="size-4" aria-hidden />}
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="flex items-center gap-2">
+                    <span className="truncate text-lg font-semibold">
+                      {memory.title}
+                    </span>
+                    <span className="shrink-0 rounded-full border border-border bg-surface-alt px-2 py-0.5 text-xs font-medium text-text-muted">
+                      {categoryLabel(dict, memory.category)}
+                    </span>
+                  </span>
+                  {memory.relationship ? (
+                    <span className="text-sm text-text-muted">
+                      {memory.relationship}
+                    </span>
+                  ) : null}
+                  <span
+                    className={cn(
+                      "mt-1 text-xs font-medium",
+                      memory.enabled ? "text-success" : "text-text-muted",
+                    )}
                   >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => remove(memory)}
-                    icon={<Trash2 className="size-4" aria-hidden />}
-                  >
-                    Delete
-                  </Button>
+                    {memory.enabled
+                      ? `✓ ${dict.memoryAvailable}`
+                      : dict.memoryHidden}
+                  </span>
+
+                  <div className="mt-auto flex gap-2 pt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEdit(memory)}
+                      icon={<Pencil className="size-4" aria-hidden />}
+                    >
+                      {dict.edit}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => void remove(memory)}
+                      icon={<Trash2 className="size-4" aria-hidden />}
+                    >
+                      {dict.remove}
+                    </Button>
+                  </div>
                 </div>
               </div>
+
+              {/* The familiar voice Memory Lane plays when the answer
+                  does not come. Under the memory it belongs to, not on
+                  a screen of its own — it is a property of this
+                  photograph, and a caregiver looking at the photograph
+                  is the person who knows what to say about it. */}
+              <VoiceRecorder
+                memoryId={memory.id}
+                hasAudio={memory.hasAudio}
+                language={language}
+                onChanged={() => router.refresh()}
+              />
             </li>
           ))}
         </ul>
@@ -237,20 +275,21 @@ export function MemoryManager({
   );
 }
 
-function messageFor(error: string | undefined): string {
+function messageFor(dict: CaregiverDict, error: string | undefined): string {
   switch (error) {
     case "image_type":
-      return "That image type is not supported. Use a JP, PNG or WebP photo.";
+      return dict.errorImageType;
     case "image_size":
-      return "That photo is too large. Please use one under 5 MB.";
+      return dict.errorImageSize;
     case "no_linked_user":
-      return "No connected family member was found for your account.";
+      return dict.errorNoLinkedUser;
     default:
-      return "Something went wrong. Please try again.";
+      return dict.somethingWentWrong;
   }
 }
 
 function MemoryForm({
+  dict,
   draft,
   setDraft,
   fileRef,
@@ -259,6 +298,7 @@ function MemoryForm({
   saving,
   error,
 }: {
+  dict: CaregiverDict;
   draft: Draft;
   setDraft: (d: Draft) => void;
   fileRef: React.RefObject<HTMLInputElement | null>;
@@ -268,15 +308,15 @@ function MemoryForm({
   error: string | null;
 }) {
   return (
-    <div className="mt-6 panel p-5 shadow-soft">
+    <div className="panel mt-6 p-5 shadow-soft">
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-xl font-semibold">
-          {draft.id ? "Edit memory" : "Add a memory"}
+          {draft.id ? dict.memoryEditTitle : dict.addMemory}
         </h3>
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Cancel"
+          aria-label={dict.cancel}
           className="rounded-lg p-1.5 text-text-muted hover:bg-surface-alt"
         >
           <X className="size-5" aria-hidden />
@@ -285,7 +325,7 @@ function MemoryForm({
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold">Category</span>
+          <span className="text-sm font-semibold">{dict.memoryCategory}</span>
           <select
             value={draft.category}
             onChange={(e) =>
@@ -293,9 +333,9 @@ function MemoryForm({
             }
             className="rounded-xl border-2 border-border-strong bg-surface px-4 py-2.5"
           >
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
+            {CATEGORIES.map((value) => (
+              <option key={value} value={value}>
+                {categoryLabel(dict, value)}
               </option>
             ))}
           </select>
@@ -303,7 +343,9 @@ function MemoryForm({
 
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold">
-            {draft.category === "PERSON" ? "Name" : "Title"}
+            {draft.category === "PERSON"
+              ? dict.memoryNameField
+              : dict.memoryTitleField}
           </span>
           <input
             value={draft.title}
@@ -315,21 +357,25 @@ function MemoryForm({
 
         {draft.category === "PERSON" ? (
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold">Relationship</span>
+            <span className="text-sm font-semibold">
+              {dict.memoryRelationship}
+            </span>
             <input
               value={draft.relationship}
               onChange={(e) =>
                 setDraft({ ...draft, relationship: e.target.value })
               }
               maxLength={40}
-              placeholder="e.g. Daughter"
+              placeholder={dict.memoryRelationshipPlaceholder}
               className="rounded-xl border-2 border-border-strong bg-surface px-4 py-2.5"
             />
           </label>
         ) : null}
 
         <label className="flex flex-col gap-1.5 sm:col-span-2">
-          <span className="text-sm font-semibold">Short note (optional)</span>
+          <span className="text-sm font-semibold">
+            {dict.memoryNoteOptional}
+          </span>
           <textarea
             value={draft.description}
             onChange={(e) =>
@@ -342,16 +388,16 @@ function MemoryForm({
         </label>
 
         <label className="flex flex-col gap-1.5 sm:col-span-2">
-          <span className="text-sm font-semibold">Photo (optional)</span>
+          <span className="text-sm font-semibold">
+            {dict.memoryPhotoOptional}
+          </span>
           <input
             ref={fileRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="text-sm"
           />
-          <span className="text-xs text-text-muted">
-            JPG, PNG or WebP, up to 5 MB. Stored privately.
-          </span>
+          <span className="text-xs text-text-muted">{dict.memoryPhotoHelp}</span>
         </label>
       </div>
 
@@ -362,9 +408,7 @@ function MemoryForm({
           onChange={(e) => setDraft({ ...draft, enabled: e.target.checked })}
           className="size-5"
         />
-        <span className="text-base font-medium">
-          Available for memory activities
-        </span>
+        <span className="text-base font-medium">{dict.memoryAvailable}</span>
       </label>
 
       {error ? (
@@ -375,10 +419,10 @@ function MemoryForm({
 
       <div className="mt-5 flex gap-3">
         <Button size="sm" onClick={onSave} disabled={saving}>
-          {saving ? "Saving…" : "Save memory"}
+          {saving ? dict.saving : dict.memorySave}
         </Button>
         <Button size="sm" variant="outline" onClick={onCancel}>
-          Cancel
+          {dict.cancel}
         </Button>
       </div>
     </div>

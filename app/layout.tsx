@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
+import { MemoryLaneNotifier } from "@/components/elderly/MemoryLaneNotifier";
 import { ReminderNotifier } from "@/components/elderly/ReminderNotifier";
 import { ThemeScript } from "@/components/ui/ThemeScript";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -110,6 +111,12 @@ export default async function RootLayout({
             nothing, and does nothing at all until the person has
             turned alerts on from their profile. */}
         <ReminderNotifier userId={user?.id ?? null} language={language} />
+        {/* The same, for memories that have come due in Memory Lane.
+            A sibling rather than a branch inside ReminderNotifier:
+            the two watch different data on different cadences, and
+            folding them together would make one component that has to
+            be right about both. */}
+        <MemoryLaneNotifier userId={user?.id ?? null} language={language} />
         {children}
       </body>
     </html>

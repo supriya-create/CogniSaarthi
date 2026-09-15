@@ -47,11 +47,15 @@ export function CaregiverShell({
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur-xl lg:hidden">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
-          <Link href="/caregiver" className="rounded-lg">
+        {/* Wraps, because every size here is in rem: at the large
+            text-size preference the wordmark and Sign out together
+            exceed a 375px phone, and without this the button simply
+            went off the right-hand edge. */}
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3.5">
+          <Link href="/caregiver" className="min-w-0 rounded-lg">
             <Wordmark size="sm" />
           </Link>
-          <div className="flex items-center gap-3">{action}</div>
+          <div className="flex min-w-0 items-center gap-3">{action}</div>
         </div>
         {nav ? <CaregiverNavBar language={language} /> : null}
       </header>
@@ -79,9 +83,14 @@ export function CaregiverShell({
           </aside>
         ) : null}
 
+        {/* `min-w-0` is load-bearing, not tidying. A flex item defaults
+            to `min-width: auto`, so without it this column refuses to
+            shrink below its own content: on a 1024px laptop the rail
+            plus an un-shrinkable main pushed the page 307px wider than
+            the window, and the whole dashboard scrolled sideways. */}
         <main
           id="main"
-          className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 sm:px-7 lg:py-10"
+          className="mx-auto w-full min-w-0 max-w-5xl flex-1 px-5 py-8 sm:px-7 lg:py-10"
         >
           {children}
         </main>

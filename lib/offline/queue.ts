@@ -189,6 +189,34 @@ export async function markFailure(
   return status;
 }
 
+/**
+ * Clear the backoff on pending work when the network comes back.
+ *
+ * Backoff exists so a tablet on a bad connection is not hammering the
+ * network and the battery. Once the connection demonstrably returns,
+ * the reason for waiting is gone — and without this, an operation that
+ * had backed off to ten minutes goes on waiting ten minutes while a
+ * perfectly good connection sits idle, which to the person looks like
+ * the app simply losing what they did.
+ *
+ * Only PENDING operations are touched. FAILED and NEEDS_AUTH are
+ * terminal states reached for reasons a working network does not
+ * change — a rejected payload is still rejected — and reviving them
+ * here would turn a permanent failure into a retry loop.
+ */
+export async function resetBackoff(): Promise<number> {
+  const all = await db.getAll<SyncOperation>(STORES.queue);
+  const waiting = all.filter((o) => o.status === "PENDING" && o.attempts > 0);
+  for (const operation of waiting) {
+    await db.put(STORES.queue, {
+      ...operation,
+      attempts: 0,
+      lastAttemptAt: null,
+    } satisfies SyncOperation);
+  }
+  return waiting.length;
+}
+
 /** Put NEEDS_AUTH work back in line once the person has signed in. */
 export async function retryAuthBlocked(): Promise<number> {
   const all = await db.getAll<SyncOperation>(STORES.queue);

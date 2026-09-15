@@ -6,6 +6,7 @@ import {
   LifeBuoy,
   ListChecks,
   Shapes,
+  Sprout,
   UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -34,6 +35,11 @@ export const ELDER_NAV: ElderNavItem[] = [
   { href: "/home", labelKey: "home", Icon: House, primary: true },
   { href: "/games", labelKey: "navGames", Icon: Shapes, primary: true },
   { href: "/memories", labelKey: "navMemories", Icon: Heart, primary: true },
+  {
+    href: "/memories/lane",
+    labelKey: "navMemoryLane",
+    Icon: Sprout,
+  },
   { href: "/routine", labelKey: "navRoutine", Icon: CalendarHeart },
   { href: "/reminders", labelKey: "navReminders", Icon: Bell },
   { href: "/history", labelKey: "navHistory", Icon: ListChecks },

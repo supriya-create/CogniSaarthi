@@ -56,6 +56,42 @@ export function localDayBounds(now: Date, timeZone: string): [Date, Date] {
 }
 
 /**
+ * Record that an overdue occurrence went unanswered.
+ *
+ * `createMany({ skipDuplicates: true })` rather than the `upsert` with
+ * an empty `update` this used to be. That form does NOT compile to an
+ * atomic `INSERT … ON CONFLICT`: with nothing to update, Prisma falls
+ * back to a read followed by a write, and two requests arriving
+ * together — which is routine, since opening the app fires several at
+ * once — both read nothing and both insert. One then fails on the
+ * unique constraint, and the P2002 took a page render down with it.
+ *
+ * This is genuinely atomic (`ON CONFLICT DO NOTHING`), and its
+ * semantics are exactly what is wanted: write the marker if nothing is
+ * there, and otherwise leave alone whatever is — which matters,
+ * because "whatever is" might be a real answer that landed a moment
+ * ago, and overwriting that with MISSED would be a lie about somebody
+ * who did take their medicine.
+ *
+ * The row is then read back, so the caller sees the winning write
+ * whether or not it was ours.
+ */
+async function markMissed(
+  reminderId: string,
+  userId: string,
+  scheduledFor: Date,
+) {
+  await prisma.reminderLog.createMany({
+    data: [{ reminderId, userId, scheduledFor, status: "MISSED" }],
+    skipDuplicates: true,
+  });
+
+  return prisma.reminderLog.findUnique({
+    where: { reminderId_scheduledFor: { reminderId, scheduledFor } },
+  });
+}
+
+/**
  * Recompute today's reminder occurrences, persist MISSED for those that
  * have gone unanswered past the grace window, and return the day.
  */
@@ -98,21 +134,7 @@ export async function syncReminderDay(
       // the caregiver summary and alerts can count it even if the elder
       // never opens the app. Never overwrites a real answer.
       if (!log && overdue) {
-        log = await prisma.reminderLog.upsert({
-          where: {
-            reminderId_scheduledFor: {
-              reminderId: reminder.id,
-              scheduledFor,
-            },
-          },
-          create: {
-            reminderId: reminder.id,
-            userId,
-            scheduledFor,
-            status: "MISSED",
-          },
-          update: {},
-        });
+        log = await markMissed(reminder.id, userId, scheduledFor);
       }
 
       const state = classifyOccurrence(

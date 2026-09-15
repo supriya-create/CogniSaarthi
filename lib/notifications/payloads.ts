@@ -51,19 +51,20 @@ export const NOTIFICATION_DESTINATION: Record<SafeNotificationKind, string> = {
 };
 
 /**
- * The kinds anything in this phase actually emits.
+ * The kinds anything actually emits.
  *
- * `MEMORY_LANE_DUE` is defined above and deliberately NOT here. Memory
- * Lane — the spaced-retrieval scheduler — is the next feature, and
- * `/memories/lane` is the route it will add. Nothing schedules or
- * shows this kind today, so no notification can send anybody to a page
- * that does not exist yet. The mapping is foundation, not a live path,
- * and a test asserts the distinction rather than leaving it to a
- * comment.
+ * This list exists so a notification can never send somebody to a page
+ * that does not exist, and a test asserts every entry has a real route
+ * rather than leaving it to a comment.
+ *
+ * `MEMORY_LANE_DUE` was deliberately absent until Memory Lane shipped.
+ * It is here now: `/memories/lane` is a real route, and
+ * `MemoryLaneNotifier` shows this kind when a memory comes due.
  */
 export const EMITTED_NOTIFICATION_KINDS: SafeNotificationKind[] = [
   "REMINDER_DUE",
   "DAILY_ACTIVITY",
+  "MEMORY_LANE_DUE",
 ];
 
 /** A notification that is safe to display on a locked device. */

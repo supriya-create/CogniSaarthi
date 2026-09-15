@@ -20,6 +20,12 @@ import {
   type AlertContext,
   type DomainSignal,
 } from "@/lib/notifications/alerts";
+import type { AlertDescriptor } from "@/lib/notifications/types";
+import {
+  deriveReinforcementAlerts,
+  signalFor,
+} from "@/lib/memories/reinforcement";
+import { getScheduledMemories } from "@/lib/memories/server";
 import { statsForDay, syncReminderDay } from "@/lib/reminders/sync";
 import { dayIndex, DAY_MS, localDayOf } from "@/lib/reminders/timezone";
 
@@ -101,7 +107,14 @@ export async function syncAlerts(
   now: Date = new Date(),
 ): Promise<void> {
   const context = await buildAlertContext(userId, timeZone, now);
-  const descriptors = deriveAlerts(context);
+  const descriptors = [
+    ...deriveAlerts(context),
+    // Memory Lane's own signal, derived by the same shape of pure
+    // function and persisted through the same de-duplication. It is
+    // deliberately NOT one alert per missed prompt — see
+    // lib/memories/reinforcement.ts.
+    ...(await deriveMemoryAlerts(userId, timeZone, now)),
+  ];
 
   for (const descriptor of descriptors) {
     const existing = await prisma.alert.findUnique({
@@ -120,6 +133,33 @@ export async function syncAlerts(
       },
     });
   }
+}
+
+/**
+ * Memory Lane's contribution to the alert list.
+ *
+ * Separated from `buildAlertContext` because it reads a different part
+ * of the database and answers a different question, and folding it in
+ * there would make one function that assembles everything about
+ * everything. The RULE — which memories are worth mentioning, and how
+ * often — is the pure, tested one in lib/memories/reinforcement.ts;
+ * this only fetches its input.
+ */
+async function deriveMemoryAlerts(
+  userId: string,
+  timeZone: string,
+  now: Date,
+): Promise<AlertDescriptor[]> {
+  const scheduled = await getScheduledMemories(userId, now);
+  if (scheduled.length === 0) return [];
+
+  return deriveReinforcementAlerts({
+    now,
+    timeZone,
+    memories: scheduled.map((row) =>
+      signalFor(row.memory.id, row.memory.title, row.state),
+    ),
+  });
 }
 
 export type AlertFilter = "all" | "unread" | "important" | "resolved";

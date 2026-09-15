@@ -2,10 +2,14 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
-import { MemoryManager } from "@/components/caregiver/MemoryManager";
+import {
+  MemoryManager,
+  type ManagedMemory,
+} from "@/components/caregiver/MemoryManager";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { requireCaregiver } from "@/lib/auth/current-user";
-import { getMemoriesForUser, linkedUserFor } from "@/lib/memories/queries";
+import { prisma } from "@/lib/db/prisma";
+import { linkedUserFor } from "@/lib/memories/queries";
 import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
 import { caregiverLanguage } from "@/lib/caregiver/preferences";
 import { SignOutButton } from "../SignOutButton";
@@ -31,7 +35,28 @@ export default async function CaregiverMemoriesPage() {
     );
   }
 
-  const memories = await getMemoriesForUser(user.id);
+  // `linkedUserFor` has already established that this caregiver is
+  // actively linked to this elder, so the query is scoped to that
+  // elder's id and cannot reach another family's memories.
+  const rows = await prisma.personalMemory.findMany({
+    where: { userId: user.id },
+    orderBy: [{ category: "asc" }, { createdAt: "desc" }],
+    include: { audio: { select: { id: true } } },
+  });
+
+  // Only what the manager needs — never a database row wholesale, and
+  // never a stored file path, which has no business in a client
+  // bundle even though it is only ever a bare filename.
+  const memories: ManagedMemory[] = rows.map((memory) => ({
+    id: memory.id,
+    category: memory.category,
+    title: memory.title,
+    relationship: memory.relationship,
+    description: memory.description,
+    enabled: memory.enabled,
+    hasImage: memory.imagePath !== null,
+    hasAudio: memory.audio !== null,
+  }));
 
   return (
     <CaregiverShell
@@ -41,7 +66,7 @@ export default async function CaregiverMemoriesPage() {
     >
       <Link
         href="/caregiver"
-        className="inline-flex items-center gap-1 text-base font-semibold text-text-muted hover:text-text"
+        className="inline-flex min-h-[2.75rem] items-center gap-1 rounded-lg pr-3 text-base font-semibold text-text-muted hover:text-text"
       >
         <ChevronLeft className="size-5" aria-hidden />
         {dict.backToDashboard}

@@ -32,6 +32,8 @@ function recall(
     memoryId: "mem-1",
     outcome: "RECOGNISED",
     mode: "CHOICE",
+    presentation: null,
+    intervalStep: null,
     responseTimeMs: 3200,
     occurredAt: "2026-09-15T04:30:00.000Z",
     syncStatus: "PENDING",
@@ -64,6 +66,7 @@ function snapshot(userId: string): OfflineSnapshot {
     reminderLogs: [],
     memories: [],
     sessions: [],
+    memoryRecalls: [],
   };
 }
 
@@ -232,6 +235,13 @@ describe("what a recall event holds", () => {
 
     // On a shared tablet the local store must not hold a family
     // member's name or a description of a photograph.
+    //
+    // An EXACT list rather than a check for known-bad keys, so a field
+    // added later has to be justified here before it can ship. Memory
+    // Lane added two, and neither is content: `presentation` is which
+    // shape of question was asked, `intervalStep` is a position in a
+    // fixed schedule. Both are meaningless without the server's copy
+    // of the memory.
     expect(Object.keys(stored).sort()).toEqual(
       [
         "clientEventId",
@@ -239,10 +249,31 @@ describe("what a recall event holds", () => {
         "mode",
         "occurredAt",
         "outcome",
+        "presentation",
+        "intervalStep",
         "responseTimeMs",
         "syncStatus",
       ].sort(),
     );
+  });
+
+  it("holds no free text at all, whatever the field is called", async () => {
+    await repo.saveMemoryRecall(
+      recall({ presentation: "PERSON_RECOGNITION", intervalStep: 5 }),
+    );
+    const [stored] = await repo.allMemoryRecalls();
+
+    // Every string value must be an identifier or a closed-set token —
+    // never a sentence somebody wrote about a photograph. Checked by
+    // shape rather than by name, so a content field smuggled in under
+    // an innocent key is still caught.
+    for (const [key, value] of Object.entries(stored)) {
+      if (typeof value !== "string") continue;
+      expect(
+        /^[A-Za-z0-9_:.-]+$/.test(value),
+        `${key} contains free text: ${value}`,
+      ).toBe(true);
+    }
   });
 
   it("keeps an unmeasured response time as null", async () => {

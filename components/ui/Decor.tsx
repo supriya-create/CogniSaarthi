@@ -42,7 +42,15 @@ export function LeafSprig({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 120 120"
-      className={cn("pointer-events-none size-32 -z-10", className)}
+      // No `-z-10` here, unlike every earlier version of this file.
+      // It made the sprig invisible wherever it is used as an ICON
+      // rather than as background — inside the empty-state plate and
+      // Memory Lane's intro badge it sat behind the plate's own fill,
+      // leaving a blank circle. The decorative uses are all absolutely
+      // positioned BEFORE their sibling content, so source order
+      // already puts them behind it, and `OrchidSprig` beside this one
+      // has never needed the negative index either.
+      className={cn("pointer-events-none size-32", className)}
       aria-hidden
       focusable="false"
     >

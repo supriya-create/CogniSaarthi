@@ -325,6 +325,8 @@ async function applyMemoryRecall(
         clientEventId: payload.clientEventId,
         outcome: payload.outcome,
         mode: payload.mode,
+        presentation: payload.presentation ?? null,
+        intervalStep: payload.intervalStep ?? null,
         responseTimeMs: payload.responseTimeMs,
         occurredAt: new Date(payload.occurredAt),
       },

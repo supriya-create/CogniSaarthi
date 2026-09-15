@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db/prisma";
 import { getActiveGames, getRecentSessions } from "@/lib/db/queries";
 import { getCognitiveProfile } from "@/lib/cognitive-performance/profile";
 import { getDefinition } from "@/lib/game-engine/definitions";
-import { getEnabledMemoriesForUser } from "@/lib/memories/queries";
 import { getEnabledRemindersForUser } from "@/lib/reminders/queries";
 import { localDayBounds } from "@/lib/reminders/sync";
 import { DAY_MS } from "@/lib/reminders/timezone";
@@ -14,6 +13,7 @@ import type {
   CachedProfile,
   CachedReminder,
   OfflineSnapshot,
+  SnapshotMemoryRecall,
   SnapshotReminderLog,
   SnapshotSession,
 } from "@/lib/offline/types";
@@ -33,6 +33,16 @@ import type {
 const HISTORY_LIMIT = 30;
 /** How far back to carry reminder answers, for offline day rebuilds. */
 const REMINDER_LOG_DAYS = 7;
+/**
+ * How many recall answers to carry, so Memory Lane's schedule survives
+ * a device change.
+ *
+ * The schedule is a fold over a memory's events and the step only ever
+ * moves one at a time, so the tail determines the state; 400 is far
+ * more than the eight-step schedule can traverse and still a bounded
+ * response on a 4G connection.
+ */
+const RECALL_EVENT_LIMIT = 400;
 
 export async function buildSnapshot(
   userId: string,
@@ -48,17 +58,26 @@ export async function buildSnapshot(
   const [dayStart] = localDayBounds(now, timeZone);
   const logsFrom = new Date(dayStart.getTime() - REMINDER_LOG_DAYS * DAY_MS);
 
-  const [games, cognitive, reminders, memories, sessions, logs] =
+  const [games, cognitive, reminders, memories, sessions, logs, recalls] =
     await Promise.all([
       getActiveGames(),
       getCognitiveProfile(userId),
       getEnabledRemindersForUser(userId),
-      getEnabledMemoriesForUser(userId),
+      prisma.personalMemory.findMany({
+        where: { userId, enabled: true },
+        orderBy: [{ category: "asc" }, { createdAt: "desc" }],
+        include: { audio: { select: { id: true } } },
+      }),
       getRecentSessions(userId, HISTORY_LIMIT),
       prisma.reminderLog.findMany({
         where: { userId, scheduledFor: { gte: logsFrom } },
         orderBy: { scheduledFor: "desc" },
         take: 200,
+      }),
+      prisma.memoryRecallEvent.findMany({
+        where: { userId },
+        orderBy: { occurredAt: "desc" },
+        take: RECALL_EVENT_LIMIT,
       }),
     ]);
 
@@ -117,6 +136,20 @@ export async function buildSnapshot(
     relationship: m.relationship,
     description: m.description,
     hasImage: m.imagePath !== null,
+    // A flag only. The recording itself stays behind the authenticated
+    // route, exactly like the photograph.
+    hasAudio: m.audio !== null,
+  }));
+
+  const cachedRecalls: SnapshotMemoryRecall[] = recalls.map((event) => ({
+    clientEventId: event.clientEventId,
+    memoryId: event.memoryId,
+    outcome: event.outcome,
+    mode: event.mode,
+    presentation: event.presentation,
+    intervalStep: event.intervalStep,
+    responseTimeMs: event.responseTimeMs,
+    occurredAt: event.occurredAt.toISOString(),
   }));
 
   const cachedLogs: SnapshotReminderLog[] = logs.map((log) => ({
@@ -157,6 +190,7 @@ export async function buildSnapshot(
     reminderLogs: cachedLogs,
     memories: cachedMemories,
     sessions: cachedSessions,
+    memoryRecalls: cachedRecalls,
   };
 }
 

@@ -369,6 +369,46 @@ const en = {
   privacySaving: "Saving your choice…",
   privacySaveError: "We could not save that. Please try again.",
 
+  // --- Phase 8: Memory Lane ---
+  //
+  // The register here matters more than anywhere else in the product.
+  // Somebody is looking at a photograph of their daughter. Every line
+  // is written as "we are doing this together" — there is no "correct",
+  // no "wrong", no "score", and nothing that could be read as a verdict
+  // on how their memory is doing. When an answer does not come, the
+  // app supplies it warmly and moves on.
+  navMemoryLane: "Memory Lane",
+  laneTitle: "Memory Lane",
+  laneInvite: "Let's remember together.",
+  laneSubtitle: "A few minutes with the people and places you love.",
+  laneOpen: "Open Memory Lane",
+  laneJourneyCaption: "A few minutes with your photos",
+  laneAskName: "What is your {value}'s name?",
+  laneAskRelationship: "{value} is your…",
+  // The errorless correction. "This is Meera." / "Your daughter."
+  laneThisIs: "This is {value}.",
+  laneYour: "Your {value}.",
+  laneComeBack: "We'll come back to this one.",
+  // The errorless escape hatch, worded as a preference rather than a
+  // shortfall: "I'm not sure" is something a person chooses, where
+  // "I don't know" is something they admit.
+  laneNotSure: "I'm not sure",
+  laneHearVoice: "Hear a familiar voice",
+  laneHear: "Hear",
+  laneVoicePlaying: "Playing…",
+  laneDone: "Lovely remembering together.",
+  laneDoneBody: "We'll look at a few more another time.",
+  laneAgain: "Look at them again",
+  laneEmptyTitle: "Your Memory Lane is waiting.",
+  laneEmptyBody:
+    "A caregiver can add special people, places and moments for you.",
+  laneNothingDueTitle: "Nothing to look at just now.",
+  laneNothingDueBody:
+    "Your memories are safe here. Come back a little later.",
+  laneWaitingCount: "{n} more waiting for another day",
+  laneStepOf: "{n} of {total}",
+  laneLoading: "Getting your memories ready…",
+
   // --- errors & empty states ---
   errorTitle: "Something went wrong.",
   errorBody: "Let's try that again.",
@@ -705,6 +745,35 @@ const hi: Partial<Dict> = {
   errorBody: "आइए फिर से कोशिश करें।",
   notFoundTitle: "यह पन्ना नहीं मिला।",
   notFoundBody: "आइए वापस चलते हैं।",
+
+  // --- Phase 8: Memory Lane ---
+  navMemoryLane: "यादों की गली",
+  laneTitle: "यादों की गली",
+  laneInvite: "आइए मिलकर याद करें।",
+  laneSubtitle: "अपने प्यारे लोगों और जगहों के साथ कुछ पल।",
+  laneOpen: "यादों की गली खोलें",
+  laneJourneyCaption: "अपनी तस्वीरों के साथ कुछ मिनट",
+  laneAskName: "आपके {value} का नाम क्या है?",
+  laneAskRelationship: "{value} आपकी/आपके…",
+  laneThisIs: "यह {value} हैं।",
+  laneYour: "आपकी/आपके {value}।",
+  laneComeBack: "हम इन्हें फिर से देखेंगे।",
+  laneNotSure: "मुझे ठीक से याद नहीं",
+  laneHearVoice: "जानी-पहचानी आवाज़ सुनें",
+  laneHear: "सुनें",
+  laneVoicePlaying: "चल रहा है…",
+  laneDone: "साथ में याद करना अच्छा लगा।",
+  laneDoneBody: "बाकी को हम किसी और दिन देखेंगे।",
+  laneAgain: "इन्हें फिर से देखें",
+  laneEmptyTitle: "आपकी यादों की गली इंतज़ार कर रही है।",
+  laneEmptyBody:
+    "आपके परिवार वाले यहाँ खास लोग, जगहें और पल जोड़ सकते हैं।",
+  laneNothingDueTitle: "अभी देखने के लिए कुछ नहीं है।",
+  laneNothingDueBody:
+    "आपकी यादें यहीं सुरक्षित हैं। थोड़ी देर बाद आइएगा।",
+  laneWaitingCount: "{n} और किसी दूसरे दिन के लिए",
+  laneStepOf: "{total} में से {n}",
+  laneLoading: "आपकी यादें तैयार की जा रही हैं…",
 };
 
 const as: Partial<Dict> = {
@@ -1034,6 +1103,35 @@ const as: Partial<Dict> = {
   errorBody: "আহক, আকৌ এবাৰ চেষ্টা কৰোঁ।",
   notFoundTitle: "সেই পৃষ্ঠাখন পোৱা নগ'ল।",
   notFoundBody: "আহক, চিনাকি ঠাইলৈ উভতি যাওঁ।",
+
+  // --- Phase 8: Memory Lane ---
+  navMemoryLane: "স্মৃতিৰ বাট",
+  laneTitle: "স্মৃতিৰ বাট",
+  laneInvite: "আহক, একেলগে মনত পেলাওঁ।",
+  laneSubtitle: "আপুনি ভাল পোৱা মানুহ আৰু ঠাইৰ সৈতে কেইটামান মুহূৰ্ত।",
+  laneOpen: "স্মৃতিৰ বাট খোলক",
+  laneJourneyCaption: "আপোনাৰ ফটোৰ সৈতে কেইমিনিটমান",
+  laneAskName: "আপোনাৰ {value}ৰ নাম কি?",
+  laneAskRelationship: "{value} আপোনাৰ…",
+  laneThisIs: "এওঁ {value}।",
+  laneYour: "আপোনাৰ {value}।",
+  laneComeBack: "আমি ইয়াক পুনৰ চাম।",
+  laneNotSure: "মোৰ ভালকৈ মনত নাই",
+  laneHearVoice: "চিনাকি মাত শুনক",
+  laneHear: "শুনক",
+  laneVoicePlaying: "বাজি আছে…",
+  laneDone: "একেলগে মনত পেলাই ভাল লাগিল।",
+  laneDoneBody: "বাকীবোৰ আন এদিন চাম।",
+  laneAgain: "সিহঁতক পুনৰ চাওক",
+  laneEmptyTitle: "আপোনাৰ স্মৃতিৰ বাট অপেক্ষা কৰি আছে।",
+  laneEmptyBody:
+    "আপোনাৰ পৰিয়ালে ইয়াত বিশেষ মানুহ, ঠাই আৰু মুহূৰ্ত যোগ কৰিব পাৰে।",
+  laneNothingDueTitle: "এতিয়া চাবলৈ একো নাই।",
+  laneNothingDueBody:
+    "আপোনাৰ স্মৃতিবোৰ ইয়াতেই সুৰক্ষিত। অলপ পিছত আহিব।",
+  laneWaitingCount: "আন এদিনৰ বাবে আৰু {n}টা",
+  laneStepOf: "{total}ৰ ভিতৰত {n}",
+  laneLoading: "আপোনাৰ স্মৃতিবোৰ সাজু কৰা হৈ আছে…",
 };
 
 const dictionaries: Record<Language, Dict> = {

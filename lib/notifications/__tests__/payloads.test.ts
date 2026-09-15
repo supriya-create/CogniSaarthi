@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -112,7 +112,7 @@ describe("click destinations", () => {
     expect(destinationForKind("DAILY_ACTIVITY")).toBe("/home");
   });
 
-  it("maps Memory Lane to its future route", () => {
+  it("sends a Memory Lane notification to /memories/lane", () => {
     expect(destinationForKind("MEMORY_LANE_DUE")).toBe("/memories/lane");
   });
 
@@ -138,16 +138,51 @@ describe("click destinations", () => {
 });
 
 describe("what is actually emitted", () => {
-  it("does not emit Memory Lane notifications yet", () => {
-    // /memories/lane arrives with the Memory Lane feature. Until then
-    // nothing schedules this kind, so no notification can send anybody
-    // to a page that does not exist.
-    expect(EMITTED_NOTIFICATION_KINDS).not.toContain("MEMORY_LANE_DUE");
+  /**
+   * Until Memory Lane shipped, this block asserted the OPPOSITE: that
+   * MEMORY_LANE_DUE was never emitted, because /memories/lane did not
+   * exist and a notification must not send somebody to a page that is
+   * not there. The route exists now, so the assertion is inverted
+   * rather than deleted — the rule it protects has not changed, only
+   * which side of it this kind falls on.
+   */
+  it("emits Memory Lane notifications, now that the route exists", () => {
+    expect(EMITTED_NOTIFICATION_KINDS).toContain("MEMORY_LANE_DUE");
+
+    const page = path.join(
+      process.cwd(),
+      "app",
+      "memories",
+      "lane",
+      "page.tsx",
+    );
+    expect(existsSync(page), "/memories/lane has no page").toBe(true);
   });
 
   it("emits only kinds that have a real destination", () => {
     for (const kind of EMITTED_NOTIFICATION_KINDS) {
       expect(destinationForKind(kind)).not.toBeNull();
+    }
+  });
+
+  /**
+   * The guarantee behind the one above, stated generally: every
+   * destination any emitted notification can resolve to must be a
+   * route that actually exists on disk.
+   */
+  it("only ever points at a route that exists", () => {
+    for (const kind of EMITTED_NOTIFICATION_KINDS) {
+      const destination = destinationForKind(kind);
+      expect(destination).not.toBeNull();
+      const page = path.join(
+        process.cwd(),
+        "app",
+        ...destination!.split("/").filter(Boolean),
+        "page.tsx",
+      );
+      expect(existsSync(page), `${kind} -> ${destination} has no page`).toBe(
+        true,
+      );
     }
   });
 });

@@ -132,6 +132,9 @@ export async function recordMemoryRecallLocally(input: {
   outcome: LocalMemoryRecall["outcome"];
   mode: LocalMemoryRecall["mode"];
   responseTimeMs: number | null;
+  /** Set by Memory Lane; null for the plain recall activity. */
+  presentation?: LocalMemoryRecall["presentation"];
+  intervalStep?: number | null;
 }): Promise<LocalMemoryRecall> {
   const now = new Date();
 
@@ -140,6 +143,8 @@ export async function recordMemoryRecallLocally(input: {
     memoryId: input.memoryId,
     outcome: input.outcome,
     mode: input.mode,
+    presentation: input.presentation ?? null,
+    intervalStep: input.intervalStep ?? null,
     responseTimeMs: input.responseTimeMs,
     occurredAt: now.toISOString(),
     syncStatus: "PENDING",
@@ -156,6 +161,8 @@ export async function recordMemoryRecallLocally(input: {
       memoryId: event.memoryId,
       outcome: event.outcome,
       mode: event.mode,
+      presentation: event.presentation,
+      intervalStep: event.intervalStep,
       responseTimeMs: event.responseTimeMs,
       occurredAt: event.occurredAt,
     },

@@ -236,11 +236,39 @@ export const reminderAckSyncPayloadSchema = z.object({
  * device only reports how the moment went. `clientEventId` is the
  * idempotency key, exactly as `clientSessionId` is for an activity.
  */
+export const memoryPresentationModeSchema = z.enum([
+  "PERSON_RECOGNITION",
+  "NAME_RECALL",
+  "RELATIONSHIP_RECALL",
+  "PLACE_RECOGNITION",
+  "CONTEXT_RECALL",
+]);
+
 export const memoryRecallSyncPayloadSchema = z.object({
   clientEventId: z.string().min(8).max(64),
   memoryId: z.string().min(1).max(64),
-  outcome: z.enum(["RECOGNISED", "NOT_RECOGNISED", "SKIPPED"]),
+  outcome: z.enum([
+    "RECOGNISED",
+    // Memory Lane's errorless correction — the answer was shown
+    // rather than chosen. Not a wrong answer; see the schema.
+    "ASSISTED",
+    "NOT_RECOGNISED",
+    "SKIPPED",
+  ]),
   mode: z.enum(["CHOICE", "VOICE"]),
+  /**
+   * Memory Lane only. Optional AND nullable: an older device still
+   * running the Phase 7 bundle pushes neither key, and a queued event
+   * from that device must not be rejected weeks later because the
+   * schema grew in the meantime.
+   */
+  presentation: memoryPresentationModeSchema.nullish(),
+  /**
+   * The schedule step the prompt was shown at. Bounded by the length
+   * of the interval table with room to spare — a value outside it is
+   * a malformed payload, not a longer schedule.
+   */
+  intervalStep: z.number().int().min(0).max(32).nullish(),
   /** Null rather than 0 when it was not measured. Ten minutes is a
    *  generous ceiling that still rejects a nonsense value. */
   responseTimeMs: z

@@ -277,6 +277,97 @@ const en = {
    * for now. Saying so is better than letting a caregiver reading
    * Assamese assume the English paragraph is a translation failure.
    */
+
+  // --- Phase 8: Memory Lane (caregiver side) ---
+  //
+  // Every status word below describes THE SCHEDULE, not the person.
+  // "Needs reinforcement" means Memory Lane will show that photograph
+  // more often; it is not a statement about anybody's memory, and the
+  // explanatory line under the list says so in as many words.
+  navMemoryLane: "Memory Lane",
+  memoryLaneTitle: "Memory retention for {name}",
+  memoryLaneHelp:
+    "How {name}'s memories are travelling through Memory Lane's practice schedule. Recognising a photograph widens the gap before it comes round again; missing one narrows it. These are labels for the schedule, never a measurement of memory or a health assessment.",
+  memoryLaneEmpty: "No memories have been practised yet.",
+  memoryLaneEmptyHelp:
+    "Once you add a memory and {name} opens Memory Lane, its history will appear here.",
+  memoryLaneNotEnabled: "Not used in activities",
+  // The dashboard's own notice opens "These scores…", which is wrong
+  // on a page that shows no scores. This is the same promise, made
+  // about the thing actually on the screen.
+  memoryLaneNotMedical:
+    "Memory Lane is a practice schedule, not an assessment. The labels above describe when a memory is shown again — nothing here measures anybody's memory or says anything about their health.",
+  retentionNEW: "Not started",
+  retentionLEARNING: "Learning",
+  retentionBUILDING: "Building",
+  retentionHOLDING: "Holding",
+  retentionNEEDS_REINFORCEMENT: "Needs reinforcement",
+  retentionNEWHelp: "This one has not come up yet.",
+  retentionLEARNINGHelp: "Coming round often, in the same sitting.",
+  retentionBUILDINGHelp: "The gaps are starting to widen.",
+  retentionHOLDINGHelp: "Recognised across a week or more.",
+  retentionNEEDS_REINFORCEMENTHelp:
+    "Recently needed a hand, so it is coming round more often again.",
+  outcomeRECOGNISED: "Recognised",
+  outcomeASSISTED: "We showed the answer",
+  outcomeNOT_RECOGNISED: "Needed a hand",
+  outcomeSKIPPED: "Moved on",
+  memoryLaneNextDue: "Next: {when}",
+  memoryLaneDueNow: "Ready now",
+  memoryLaneNoHistory: "Not practised yet",
+  memoryLaneStatus: "Status",
+  intervalSeconds: "{n} seconds",
+  intervalMinutes: "{n} minutes",
+  intervalOneMinute: "1 minute",
+  intervalDays: "{n} days",
+  intervalOneDay: "1 day",
+
+  // --- Phase 8: familiar voice ---
+  voiceTitle: "Familiar voice",
+  voiceHelp:
+    "Record yourself saying who this is — \u201cMa, this is Meera.\u201d Memory Lane plays it when the answer does not come. A recording is stored privately, exactly like the photograph.",
+  voiceRecord: "Record",
+  voiceStop: "Stop",
+  voicePlay: "Play",
+  voiceDelete: "Delete recording",
+  voiceReplace: "Record again",
+  voiceSaved: "Recording saved",
+  voiceRecording: "Recording\u2026",
+  voiceNone: "No recording yet",
+  voiceHas: "Recorded",
+  voiceUnsupported:
+    "This browser cannot record audio. Try Chrome or Safari on a phone.",
+  voiceDenied:
+    "Cognisaarthi was not allowed to use the microphone. You can allow it in your browser settings.",
+  voiceTooLong: "That recording is too long. Keep it under a minute.",
+  voiceSaveFailed: "That recording could not be saved. Please try again.",
+  voiceDeleteConfirm: "Delete this recording?",
+
+  // --- Phase 8: memory manager (previously untranslated) ---
+  memoryEditTitle: "Edit memory",
+  memoryNameField: "Name",
+  memoryRelationship: "Relationship",
+  memoryRelationshipPlaceholder: "e.g. Daughter",
+  memoryNoteOptional: "Short note (optional)",
+  memoryPhotoOptional: "Photo (optional)",
+  memoryPhotoHelp: "JPG, PNG or WebP, up to 5 MB. Stored privately.",
+  memoryAvailable: "Available for memory activities",
+  memoryHidden: "Hidden from activities",
+  memorySave: "Save memory",
+  memoryDeleteConfirm: "Delete \u201c{title}\u201d? This cannot be undone.",
+  memoryNeedsTitle: "Please give this memory a name or title.",
+  memoryNoneYet:
+    "No memories yet. Add a family member or a favourite place to begin.",
+  memoryCatPERSON: "Person",
+  memoryCatPLACE: "Place",
+  memoryCatTHING: "Thing",
+  memoryCatMOMENT: "Moment",
+  errorImageType:
+    "That image type is not supported. Use a JPG, PNG or WebP photo.",
+  errorImageSize: "That photo is too large. Please use one under 5 MB.",
+  errorNoLinkedUser:
+    "No connected family member was found for your account.",
+
   generatedCopyEnglishNote:
     "Cognisaarthi's own explanations and alert text are written in English for now.",
 } as const;
@@ -501,6 +592,85 @@ const hi: Partial<CaregiverDict> = {
   explainerPoint5:
     "यह किसी भी चिकित्सकीय स्थिति का निदान नहीं करता, और ये अंक कोई चिकित्सकीय माप नहीं हैं।",
 
+
+  // --- Phase 8: Memory Lane ---
+  navMemoryLane: "यादों की गली",
+  memoryLaneTitle: "{name} की यादों का सिलसिला",
+  memoryLaneHelp:
+    "{name} की यादें, यादों की गली के अभ्यास-क्रम में कहाँ तक पहुँची हैं। तस्वीर पहचान लेने पर अगली बार दिखाने का अंतराल बढ़ जाता है; न पहचानने पर घट जाता है। ये सिर्फ़ अभ्यास-क्रम के नाम हैं — न याददाश्त की कोई माप, न कोई स्वास्थ्य आकलन।",
+  memoryLaneEmpty: "अभी किसी याद का अभ्यास नहीं हुआ है।",
+  memoryLaneEmptyHelp:
+    "आप कोई याद जोड़ें और {name} यादों की गली खोलें — फिर उसका ब्यौरा यहाँ दिखेगा।",
+  memoryLaneNotEnabled: "गतिविधियों में शामिल नहीं",
+  memoryLaneNotMedical:
+    "यादों की गली एक अभ्यास-क्रम है, कोई आकलन नहीं। ऊपर दिए नाम सिर्फ़ यह बताते हैं कि कोई याद दोबारा कब दिखाई जाएगी — यहाँ कुछ भी किसी की याददाश्त नहीं नापता और न ही उनके स्वास्थ्य के बारे में कुछ कहता है।",
+  retentionNEW: "शुरू नहीं हुआ",
+  retentionLEARNING: "सीख रहे हैं",
+  retentionBUILDING: "बन रहा है",
+  retentionHOLDING: "टिका हुआ है",
+  retentionNEEDS_REINFORCEMENT: "और अभ्यास चाहिए",
+  retentionNEWHelp: "यह अभी तक सामने नहीं आई।",
+  retentionLEARNINGHelp: "एक ही बैठक में बार-बार दिखाई जा रही है।",
+  retentionBUILDINGHelp: "अंतराल अब बढ़ने लगे हैं।",
+  retentionHOLDINGHelp: "हफ़्ते भर या उससे ज़्यादा बाद भी पहचानी गई।",
+  retentionNEEDS_REINFORCEMENTHelp:
+    "हाल में मदद की ज़रूरत पड़ी, इसलिए अब यह फिर से जल्दी-जल्दी दिखाई जा रही है।",
+  outcomeRECOGNISED: "पहचान लिया",
+  outcomeASSISTED: "हमने जवाब दिखाया",
+  outcomeNOT_RECOGNISED: "मदद की ज़रूरत पड़ी",
+  outcomeSKIPPED: "आगे बढ़ गए",
+  memoryLaneNextDue: "अगली बार: {when}",
+  memoryLaneDueNow: "अभी तैयार",
+  memoryLaneNoHistory: "अभी अभ्यास नहीं हुआ",
+  memoryLaneStatus: "स्थिति",
+  intervalSeconds: "{n} सेकंड",
+  intervalMinutes: "{n} मिनट",
+  intervalOneMinute: "1 मिनट",
+  intervalDays: "{n} दिन",
+  intervalOneDay: "1 दिन",
+
+  voiceTitle: "जानी-पहचानी आवाज़",
+  voiceHelp:
+    "खुद बोलकर बताइए कि यह कौन है — \u201cमाँ, यह मीरा है।\u201d जवाब न आने पर यादों की गली यही सुनाती है। रिकॉर्डिंग तस्वीर की तरह निजी तौर पर रखी जाती है।",
+  voiceRecord: "रिकॉर्ड करें",
+  voiceStop: "रोकें",
+  voicePlay: "सुनें",
+  voiceDelete: "रिकॉर्डिंग हटाएँ",
+  voiceReplace: "दोबारा रिकॉर्ड करें",
+  voiceSaved: "रिकॉर्डिंग सहेज ली",
+  voiceRecording: "रिकॉर्ड हो रहा है\u2026",
+  voiceNone: "अभी कोई रिकॉर्डिंग नहीं",
+  voiceHas: "रिकॉर्ड किया हुआ",
+  voiceUnsupported:
+    "यह ब्राउज़र आवाज़ रिकॉर्ड नहीं कर सकता। फ़ोन पर Chrome या Safari आज़माइए।",
+  voiceDenied:
+    "कॉग्निसारथी को माइक्रोफ़ोन इस्तेमाल करने की अनुमति नहीं मिली। आप ब्राउज़र सेटिंग में अनुमति दे सकते हैं।",
+  voiceTooLong: "यह रिकॉर्डिंग बहुत लंबी है। एक मिनट से कम रखिए।",
+  voiceSaveFailed: "यह रिकॉर्डिंग सहेजी नहीं जा सकी। कृपया फिर कोशिश कीजिए।",
+  voiceDeleteConfirm: "यह रिकॉर्डिंग हटा दें?",
+
+  memoryEditTitle: "याद बदलें",
+  memoryNameField: "नाम",
+  memoryRelationship: "रिश्ता",
+  memoryRelationshipPlaceholder: "जैसे बेटी",
+  memoryNoteOptional: "छोटी टिप्पणी (वैकल्पिक)",
+  memoryPhotoOptional: "तस्वीर (वैकल्पिक)",
+  memoryPhotoHelp: "JPG, PNG या WebP, 5 MB तक। निजी तौर पर रखी जाती है।",
+  memoryAvailable: "याद वाली गतिविधियों में उपलब्ध",
+  memoryHidden: "गतिविधियों से छिपी हुई",
+  memorySave: "याद सहेजें",
+  memoryDeleteConfirm: "\u201c{title}\u201d हटा दें? यह वापस नहीं आएगी।",
+  memoryNeedsTitle: "कृपया इस याद को कोई नाम या शीर्षक दीजिए।",
+  memoryNoneYet:
+    "अभी कोई याद नहीं है। शुरुआत के लिए कोई परिजन या पसंदीदा जगह जोड़िए।",
+  memoryCatPERSON: "व्यक्ति",
+  memoryCatPLACE: "जगह",
+  memoryCatTHING: "चीज़",
+  memoryCatMOMENT: "पल",
+  errorImageType:
+    "यह तस्वीर का प्रकार समर्थित नहीं है। JPG, PNG या WebP इस्तेमाल कीजिए।",
+  errorImageSize: "यह तस्वीर बहुत बड़ी है। 5 MB से छोटी इस्तेमाल कीजिए।",
+  errorNoLinkedUser: "आपके खाते से जुड़ा कोई परिजन नहीं मिला।",
   generatedCopyEnglishNote:
     "कॉग्निसारथी की अपनी व्याख्याएँ और सूचना-पाठ फ़िलहाल अंग्रेज़ी में लिखे जाते हैं।",
 };
@@ -723,6 +893,85 @@ const as: Partial<CaregiverDict> = {
   explainerPoint5:
     "ই কোনো চিকিৎসাজনিত অৱস্থা নিৰ্ণয় নকৰে, আৰু এই নম্বৰবোৰ কোনো চিকিৎসাৰ জোখ নহয়।",
 
+
+  // --- Phase 8: Memory Lane ---
+  navMemoryLane: "স্মৃতিৰ বাট",
+  memoryLaneTitle: "{name}ৰ স্মৃতিৰ ধাৰাবাহিকতা",
+  memoryLaneHelp:
+    "{name}ৰ স্মৃতিবোৰ স্মৃতিৰ বাটৰ অভ্যাস-সূচীত ক\u2019ত আছে। ফটো এখন চিনি পালে পিছৰবাৰ দেখুৱাৰ ব্যৱধান বাঢ়ে; নাপালে কমে। এইবোৰ কেৱল অভ্যাস-সূচীৰ নাম — স্মৃতিৰ জোখ বা স্বাস্থ্যৰ মূল্যায়ন নহয়।",
+  memoryLaneEmpty: "এতিয়ালৈকে কোনো স্মৃতিৰ অভ্যাস হোৱা নাই।",
+  memoryLaneEmptyHelp:
+    "আপুনি এটা স্মৃতি যোগ কৰক আৰু {name}এ স্মৃতিৰ বাট খোলক — তাৰ পিছত ইয়াত ইয়াৰ ইতিহাস দেখা যাব।",
+  memoryLaneNotEnabled: "কামত ব্যৱহাৰ কৰা হোৱা নাই",
+  memoryLaneNotMedical:
+    "স্মৃতিৰ বাট এটা অভ্যাস-সূচী, কোনো মূল্যায়ন নহয়। ওপৰৰ নামবোৰে কেৱল কয় যে এটা স্মৃতি পুনৰ কেতিয়া দেখুওৱা হ\u2019ব — ইয়াত একোৱেই কাৰোবাৰ স্মৃতি নজোখে বা তেওঁলোকৰ স্বাস্থ্যৰ বিষয়ে একো নকয়।",
+  retentionNEW: "আৰম্ভ হোৱা নাই",
+  retentionLEARNING: "শিকি আছে",
+  retentionBUILDING: "গঢ় লৈ আছে",
+  retentionHOLDING: "ধৰি ৰাখিছে",
+  retentionNEEDS_REINFORCEMENT: "আৰু অভ্যাস লাগে",
+  retentionNEWHelp: "এইটো এতিয়ালৈকে ওলোৱা নাই।",
+  retentionLEARNINGHelp: "একে বহাতে বাৰে বাৰে দেখুওৱা হৈ আছে।",
+  retentionBUILDINGHelp: "ব্যৱধানবোৰ এতিয়া বাঢ়িবলৈ ধৰিছে।",
+  retentionHOLDINGHelp: "এসপ্তাহ বা তাতোকৈ বেছি পিছতো চিনি পাইছে।",
+  retentionNEEDS_REINFORCEMENTHelp:
+    "শেহতীয়াকৈ সহায় লাগিছিল, সেয়েহে এতিয়া পুনৰ সঘনাই দেখুওৱা হৈ আছে।",
+  outcomeRECOGNISED: "চিনি পালে",
+  outcomeASSISTED: "আমি উত্তৰটো দেখুৱালোঁ",
+  outcomeNOT_RECOGNISED: "সহায় লাগিছিল",
+  outcomeSKIPPED: "আগবাঢ়িল",
+  memoryLaneNextDue: "পিছৰবাৰ: {when}",
+  memoryLaneDueNow: "এতিয়াই সাজু",
+  memoryLaneNoHistory: "এতিয়ালৈকে অভ্যাস হোৱা নাই",
+  memoryLaneStatus: "অৱস্থা",
+  intervalSeconds: "{n} ছেকেণ্ড",
+  intervalMinutes: "{n} মিনিট",
+  intervalOneMinute: "1 মিনিট",
+  intervalDays: "{n} দিন",
+  intervalOneDay: "1 দিন",
+
+  voiceTitle: "চিনাকি মাত",
+  voiceHelp:
+    "নিজে ক\u2019য়ে দিয়ক এওঁ কোন — \u201cমা, এওঁ মীৰা।\u201d উত্তৰ নাহিলে স্মৃতিৰ বাটে এইটোৱেই বজায়। ৰেকৰ্ডিং ফটোৰ দৰেই ব্যক্তিগতভাৱে ৰখা হয়।",
+  voiceRecord: "ৰেকৰ্ড কৰক",
+  voiceStop: "বন্ধ কৰক",
+  voicePlay: "শুনক",
+  voiceDelete: "ৰেকৰ্ডিং আঁতৰাওক",
+  voiceReplace: "পুনৰ ৰেকৰ্ড কৰক",
+  voiceSaved: "ৰেকৰ্ডিং সাঁচি থোৱা হ\u2019ল",
+  voiceRecording: "ৰেকৰ্ড হৈ আছে\u2026",
+  voiceNone: "এতিয়ালৈকে ৰেকৰ্ডিং নাই",
+  voiceHas: "ৰেকৰ্ড কৰা আছে",
+  voiceUnsupported:
+    "এই ব্ৰাউজাৰে মাত ৰেকৰ্ড কৰিব নোৱাৰে। ফোনত Chrome বা Safari চেষ্টা কৰক।",
+  voiceDenied:
+    "কগনিসাৰথীয়ে মাইক্ৰ\u2019ফোন ব্যৱহাৰ কৰাৰ অনুমতি পোৱা নাই। ব্ৰাউজাৰ ছেটিংছত অনুমতি দিব পাৰে।",
+  voiceTooLong: "এই ৰেকৰ্ডিংটো বহুত দীঘল। এক মিনিটতকৈ কম ৰাখক।",
+  voiceSaveFailed: "এই ৰেকৰ্ডিংটো সাঁচি থ\u2019ব পৰা নগ\u2019ল। অনুগ্ৰহ কৰি আকৌ চেষ্টা কৰক।",
+  voiceDeleteConfirm: "এই ৰেকৰ্ডিংটো আঁতৰাব নে?",
+
+  memoryEditTitle: "স্মৃতি সলনি কৰক",
+  memoryNameField: "নাম",
+  memoryRelationship: "সম্পৰ্ক",
+  memoryRelationshipPlaceholder: "যেনে, ছোৱালী",
+  memoryNoteOptional: "চুটি টোকা (বিকল্প)",
+  memoryPhotoOptional: "ফটো (বিকল্প)",
+  memoryPhotoHelp: "JPG, PNG বা WebP, 5 MB লৈকে। ব্যক্তিগতভাৱে ৰখা হয়।",
+  memoryAvailable: "স্মৃতিৰ কামত উপলব্ধ",
+  memoryHidden: "কামৰ পৰা লুকুৱা",
+  memorySave: "স্মৃতি সাঁচি থওক",
+  memoryDeleteConfirm: "\u201c{title}\u201d আঁতৰাব নে? ইয়াক ঘূৰাই পোৱা নাযাব।",
+  memoryNeedsTitle: "অনুগ্ৰহ কৰি এই স্মৃতিটোক এটা নাম বা শিৰোনাম দিয়ক।",
+  memoryNoneYet:
+    "এতিয়ালৈকে কোনো স্মৃতি নাই। আৰম্ভ কৰিবলৈ এজন পৰিয়ালৰ মানুহ বা এখন প্ৰিয় ঠাই যোগ কৰক।",
+  memoryCatPERSON: "মানুহ",
+  memoryCatPLACE: "ঠাই",
+  memoryCatTHING: "বস্তু",
+  memoryCatMOMENT: "মুহূৰ্ত",
+  errorImageType:
+    "এই ধৰণৰ ফটো সমৰ্থিত নহয়। JPG, PNG বা WebP ব্যৱহাৰ কৰক।",
+  errorImageSize: "এই ফটোখন বৰ ডাঙৰ। 5 MBতকৈ সৰু এখন ব্যৱহাৰ কৰক।",
+  errorNoLinkedUser: "আপোনাৰ একাউণ্টৰ সৈতে জড়িত কোনো পৰিয়ালৰ মানুহ পোৱা নগ\u2019ল।",
   generatedCopyEnglishNote:
     "কগনিসাৰথীৰ নিজৰ ব্যাখ্যা আৰু জাননীৰ লিখনি এতিয়ালৈকে ইংৰাজীত লিখা হয়।",
 };

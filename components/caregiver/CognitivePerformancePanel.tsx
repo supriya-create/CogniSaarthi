@@ -114,9 +114,14 @@ export function CognitivePerformancePanel({
           return (
             <div
               key={performance.domain}
-              className="panel flex flex-col p-5"
+              // `min-w-0`: a grid item defaults to `min-width: auto`
+              // and will not shrink below its content. The trend pill
+              // does not wrap, so at the large text-size preference
+              // this card refused to fit its column and pushed the
+              // whole dashboard sideways.
+              className="panel flex min-w-0 flex-col p-5"
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1.5">
                 <h3 className="font-serif text-xl font-semibold">{name}</h3>
                 {performance.coldStart ? null : (
                   <TrendBadge trend={performance.trend} />

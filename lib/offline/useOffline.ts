@@ -6,7 +6,12 @@ import type { ReminderLogStatus } from "@prisma/client";
 import { connectivity } from "@/lib/offline/connectivity";
 import * as queue from "@/lib/offline/queue";
 import * as repo from "@/lib/offline/repositories";
-import type { ConnectionState, LocalGameSession } from "@/lib/offline/types";
+import type {
+  CachedMemory,
+  ConnectionState,
+  LocalGameSession,
+  LocalMemoryRecall,
+} from "@/lib/offline/types";
 
 /**
  * React glue for the offline layer.
@@ -205,5 +210,110 @@ export function useUnsyncedSessions(): LocalGameSession[] {
     unsyncedSessions.subscribe,
     unsyncedSessions.getSnapshot,
     unsyncedSessions.getServerSnapshot,
+  );
+}
+
+// ---------------------------------------------------------------
+// Memory Lane — the local replica the schedule is derived from
+// ---------------------------------------------------------------
+
+const NO_RECALLS: LocalMemoryRecall[] = [];
+const NO_MEMORIES: CachedMemory[] = [];
+
+/**
+ * Every recall answer this device knows about.
+ *
+ * That is the answers given HERE and not yet pushed, plus the ones the
+ * last snapshot brought down from the server — `applySnapshot` merges
+ * both into one store keyed by `clientEventId`, so this list is already
+ * de-duplicated and needs no reconciliation by the caller.
+ *
+ * Memory Lane derives its whole schedule from this. Deriving it from
+ * the server render instead would mean a sitting played offline this
+ * morning was invisible to the sitting played offline this afternoon,
+ * and the same photographs would come round again as though nothing
+ * had happened.
+ */
+class MemoryRecallStore {
+  private listeners = new Set<() => void>();
+  private state: LocalMemoryRecall[] = NO_RECALLS;
+  private serialised = "[]";
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    void this.refresh();
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
+
+  getSnapshot = (): LocalMemoryRecall[] => this.state;
+  getServerSnapshot = (): LocalMemoryRecall[] => NO_RECALLS;
+
+  refresh = async (): Promise<void> => {
+    const all = await repo.allMemoryRecalls();
+    const serialised = JSON.stringify(
+      all.map((e) => [e.clientEventId, e.outcome, e.occurredAt]),
+    );
+    if (serialised === this.serialised) return;
+    this.serialised = serialised;
+    this.state = all;
+    for (const listener of this.listeners) listener();
+  };
+}
+
+export const memoryRecalls = new MemoryRecallStore();
+
+export function useLocalRecalls(): LocalMemoryRecall[] {
+  return useSyncExternalStore(
+    memoryRecalls.subscribe,
+    memoryRecalls.getSnapshot,
+    memoryRecalls.getServerSnapshot,
+  );
+}
+
+/**
+ * The memory metadata held on this device.
+ *
+ * Preferred over the server render when it is populated, because the
+ * page HTML may have come out of the offline cache and be days old —
+ * a memory a caregiver disabled yesterday should not reappear because
+ * of a stale document.
+ */
+class MemoryCacheStore {
+  private listeners = new Set<() => void>();
+  private state: CachedMemory[] = NO_MEMORIES;
+  private serialised = "[]";
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    void this.refresh();
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
+
+  getSnapshot = (): CachedMemory[] => this.state;
+  getServerSnapshot = (): CachedMemory[] => NO_MEMORIES;
+
+  refresh = async (): Promise<void> => {
+    const all = await repo.getMemories();
+    const serialised = JSON.stringify(
+      all.map((m) => [m.id, m.title, m.hasImage, m.hasAudio]),
+    );
+    if (serialised === this.serialised) return;
+    this.serialised = serialised;
+    this.state = all;
+    for (const listener of this.listeners) listener();
+  };
+}
+
+export const cachedMemories = new MemoryCacheStore();
+
+export function useCachedMemories(): CachedMemory[] {
+  return useSyncExternalStore(
+    cachedMemories.subscribe,
+    cachedMemories.getSnapshot,
+    cachedMemories.getServerSnapshot,
   );
 }

@@ -6,6 +6,7 @@ import type { Language } from "@prisma/client";
 import { OfflineStatus } from "@/components/offline/OfflineStatus";
 import { GAME_DEFINITIONS } from "@/lib/game-engine/definitions";
 import { connectivity } from "@/lib/offline/connectivity";
+import * as queue from "@/lib/offline/queue";
 import * as repo from "@/lib/offline/repositories";
 import { syncNow } from "@/lib/offline/sync";
 import { offlineStatus } from "@/lib/offline/useOffline";
@@ -41,6 +42,13 @@ const OFFLINE_ROUTES = [
   "/reminders",
   "/routine",
   "/memories",
+  // Memory Lane. Named explicitly even though the worker's rule
+  // already allows anything under /memories: this list is what gets
+  // FETCHED and stored ahead of time, and without the entry the page
+  // would only be available offline to somebody who had happened to
+  // open it while online.
+  "/memories/lane",
+  "/memories/remember",
   "/history",
   "/profile",
   "/help",
@@ -119,8 +127,14 @@ export function OfflineProvider({
 
     // Coming back online is the moment to catch up.
     function onOnline() {
-      void connectivity.checkHealth(true).then((reachable) => {
-        if (reachable) void syncNow();
+      void connectivity.checkHealth(true).then(async (reachable) => {
+        if (!reachable) return;
+        // Clear the backoff first. Work that failed repeatedly while
+        // the connection was down may have backed off to ten minutes,
+        // and waiting that out with a working connection looks to the
+        // person like the app losing what they did.
+        await queue.resetBackoff();
+        await syncNow();
       });
     }
 

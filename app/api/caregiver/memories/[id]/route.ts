@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentCaregiver } from "@/lib/auth/current-user";
 import { getMemoryForCaregiver } from "@/lib/memories/queries";
+import { deleteMemoryAudio } from "@/lib/memories/audio";
 import { deleteMemoryImage, saveMemoryImage } from "@/lib/memories/storage";
 import { memoryFieldsSchema } from "@/lib/validation/schemas";
 
@@ -98,7 +99,18 @@ export async function DELETE(
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
+  // The familiar-voice recording too. `MemoryAudio` cascades away with
+  // the memory, which makes forgetting this invisible: the database
+  // looks clean while a recording of somebody's daughter saying their
+  // name is still on the disk. Read the path before the cascade takes
+  // the row that names it.
+  const audio = await prisma.memoryAudio.findUnique({
+    where: { memoryId: id },
+    select: { path: true },
+  });
+
   if (existing.imagePath) await deleteMemoryImage(existing.imagePath);
+  if (audio) await deleteMemoryAudio(audio.path);
   await prisma.personalMemory.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });
