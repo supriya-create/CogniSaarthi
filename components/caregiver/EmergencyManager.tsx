@@ -101,7 +101,7 @@ export function EmergencyManager({
       </div>
 
       {draft ? (
-        <div className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-soft">
+        <div className="mt-5 panel p-5 shadow-soft">
           <div className="flex items-center justify-between">
             <h3 className="font-serif text-lg font-semibold">
               {draft.id ? "Edit contact" : "Add a contact"}
@@ -165,7 +165,7 @@ export function EmergencyManager({
       ) : null}
 
       {contacts.length === 0 && !draft ? (
-        <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-8 text-center text-text-muted">
+        <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-12 text-center text-lg text-text-muted">
           No emergency contact yet. Add one so the Help screen has someone to
           call.
         </p>
@@ -174,7 +174,7 @@ export function EmergencyManager({
           {contacts.map((c) => (
             <li
               key={c.id}
-              className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 shadow-soft"
+              className="flex items-center gap-4 panel p-4 shadow-soft"
             >
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="text-lg font-semibold">{c.name}</span>

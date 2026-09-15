@@ -1,5 +1,4 @@
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
-import { CaregiverNav } from "@/components/caregiver/CaregiverNav";
 import { AlertCenter, type AlertDTO } from "@/components/caregiver/AlertCenter";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { requireCaregiver } from "@/lib/auth/current-user";
@@ -27,7 +26,7 @@ export default async function CaregiverAlertsPage({
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+      <CaregiverShell action={<SignOutButton />} nav>
         <EmptyState
           title="No one is connected to your account yet."
           body="Once you are connected, meaningful updates about their day will appear here."
@@ -58,7 +57,7 @@ export default async function CaregiverAlertsPage({
   }));
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+    <CaregiverShell action={<SignOutButton />} nav>
       <AlertCenter alerts={dtos} filter={filter} />
     </CaregiverShell>
   );

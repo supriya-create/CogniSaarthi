@@ -121,7 +121,7 @@ export function NotesManager({
       </div>
 
       {draft ? (
-        <div className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-soft">
+        <div className="mt-6 panel p-5 shadow-soft">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-xl font-semibold">
               {draft.id ? "Edit note" : "Add a note"}
@@ -179,7 +179,7 @@ export function NotesManager({
       ) : null}
 
       {notes.length === 0 && !draft ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-10 text-center text-text-muted">
+        <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-12 text-center text-lg text-text-muted">
           No notes yet. Jot down anything you would like to remember.
         </p>
       ) : (
@@ -187,7 +187,7 @@ export function NotesManager({
           {notes.map((note) => (
             <li
               key={note.id}
-              className="rounded-2xl border border-border bg-surface p-4 shadow-soft"
+              className="panel p-4 shadow-soft"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">

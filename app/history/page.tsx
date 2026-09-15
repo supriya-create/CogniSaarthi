@@ -3,7 +3,9 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { PageShell } from "@/components/layout/PageShell";
 import { LinkButton } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ActivityItem } from "@/components/elderly/ActivityItem";
+import { UnsyncedHistory } from "@/components/elderly/UnsyncedHistory";
 import { requireUser } from "@/lib/auth/current-user";
 import { getRecentSessions } from "@/lib/db/queries";
 import { getDict } from "@/lib/i18n/dictionaries";
@@ -25,7 +27,9 @@ export default async function HistoryPage() {
 
   return (
     <PageShell
-      header={<ElderlyHeader backHref="/home" backLabel={dict.back} />}
+      header={
+        <ElderlyHeader backHref="/home" backLabel={dict.back} dict={dict} />
+      }
       nav={<BottomNav
           dict={dict}
           voice={
@@ -35,8 +39,16 @@ export default async function HistoryPage() {
           }
         />}
     >
-      <h1 className="font-serif text-3xl font-semibold">{dict.historyTitle}</h1>
-      <p className="mt-2 text-lg text-text-muted">{dict.historySubtitle}</p>
+      <SectionHeading
+        as="h1"
+        size="lg"
+        title={dict.historyTitle}
+        description={dict.historySubtitle}
+      />
+
+      {/* Anything played on this device that has not reached the server
+          yet — so history is never empty just because the network is. */}
+      <UnsyncedHistory language={language} />
 
       {groups.length === 0 ? (
         <div className="mt-8">
@@ -51,7 +63,7 @@ export default async function HistoryPage() {
         </div>
       ) : (
         groups.map((group) => (
-          <section key={group.key} className="mt-8">
+          <section key={group.key} className="mt-9">
             <h2 className="font-serif text-xl font-semibold">{group.title}</h2>
             <ul className="mt-4 flex flex-col gap-3">
               {group.items.map((session) => (

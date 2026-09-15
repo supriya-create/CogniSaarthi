@@ -36,11 +36,11 @@ export function DifficultySelector({
           <label
             key={difficulty}
             className={cn(
-              "flex min-h-[4rem] cursor-pointer items-center gap-4 rounded-2xl border-2 px-5 py-3.5",
-              "transition-colors duration-150 ease-gentle",
+              "flex min-h-[4.25rem] cursor-pointer items-center gap-4 rounded-2xl border-2 px-5 py-4",
+              "transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out-soft",
               selected
-                ? "border-primary bg-primary-soft"
-                : "border-border bg-surface hover:border-border-strong",
+                ? "border-primary bg-primary-soft shadow-lift"
+                : "border-border bg-surface shadow-soft hover:border-border-strong hover:bg-surface-alt",
             )}
           >
             <input

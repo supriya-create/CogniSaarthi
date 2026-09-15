@@ -2,13 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Mic } from "lucide-react";
 import type { Language, SpeechRate } from "@prisma/client";
 
+import { VoiceOrb } from "@/components/elderly/VoiceOrb";
 import { getDict } from "@/lib/i18n/dictionaries";
 import { useVoice } from "@/lib/voice/useVoice";
 import { COMMAND_ROUTE, parseCommand } from "@/lib/voice/commands";
-import { cn } from "@/lib/utils/cn";
 
 /**
  * A floating voice control for the elder interface. It performs a
@@ -63,29 +62,17 @@ export function VoiceButton({
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex flex-col items-center gap-2 px-4">
-      {caption ? (
-        <p
-          role="status"
-          aria-live="polite"
-          className="pointer-events-auto max-w-xs rounded-full border border-border bg-surface px-4 py-2 text-center text-base font-medium shadow-lift"
-        >
-          {caption}
-        </p>
-      ) : null}
-      <button
-        type="button"
-        onClick={handle}
-        aria-label={dict.voiceTapToSpeak}
-        className={cn(
-          "pointer-events-auto flex size-16 items-center justify-center rounded-full border-2 shadow-lift transition-colors",
-          voice.listening
-            ? "animate-pulse border-primary bg-primary text-text-inverse"
-            : "border-primary bg-surface text-primary hover:bg-primary-soft",
-        )}
-      >
-        <Mic className="size-8" aria-hidden />
-      </button>
-    </div>
+    <VoiceOrb
+      listening={voice.listening}
+      speaking={voice.speaking}
+      caption={caption}
+      listenLabel={dict.voiceTapToSpeak}
+      stopLabel={dict.quitActivity}
+      onActivate={handle}
+      onStop={() => {
+        voice.stopSpeaking();
+        setCaption(null);
+      }}
+    />
   );
 }

@@ -2,6 +2,7 @@ import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageShell } from "@/components/layout/PageShell";
 import { GameCard } from "@/components/games/GameCard";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { requireUser } from "@/lib/auth/current-user";
 import { getActiveGames, getGameIdsCompletedToday } from "@/lib/db/queries";
 import { getDefinition } from "@/lib/game-engine/definitions";
@@ -26,7 +27,9 @@ export default async function GamesPage() {
 
   return (
     <PageShell
-      header={<ElderlyHeader backHref="/home" backLabel={dict.back} />}
+      header={
+        <ElderlyHeader backHref="/home" backLabel={dict.back} dict={dict} />
+      }
       nav={<BottomNav
           dict={dict}
           voice={
@@ -36,10 +39,14 @@ export default async function GamesPage() {
           }
         />}
     >
-      <h1 className="font-serif text-3xl font-semibold">{dict.gamesTitle}</h1>
-      <p className="mt-2 text-lg text-text-muted">{dict.gamesSubtitle}</p>
+      <SectionHeading
+        as="h1"
+        size="lg"
+        title={dict.gamesTitle}
+        description={dict.gamesSubtitle}
+      />
 
-      <div className="mt-7 flex flex-col gap-4">
+      <div className="stagger mt-8 flex flex-col gap-4">
         {games.map((game) => (
           <GameCard
             key={game.id}

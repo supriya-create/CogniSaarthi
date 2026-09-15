@@ -1,5 +1,4 @@
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
-import { CaregiverNav } from "@/components/caregiver/CaregiverNav";
 import { CaregiverSettings } from "@/components/caregiver/CaregiverSettings";
 import { EmergencyManager } from "@/components/caregiver/EmergencyManager";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -17,7 +16,7 @@ export default async function CaregiverSettingsPage() {
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+      <CaregiverShell action={<SignOutButton />} nav>
         <EmptyState
           title="No one is connected to your account yet."
           body="Connect to a family member to manage their reminders, contacts and your notification settings."
@@ -33,7 +32,7 @@ export default async function CaregiverSettingsPage() {
   const timeZone = user.preference?.timeZone ?? "Asia/Kolkata";
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+    <CaregiverShell action={<SignOutButton />} nav>
       <h1 className="font-serif text-3xl font-semibold">Settings</h1>
 
       <div className="mt-6">

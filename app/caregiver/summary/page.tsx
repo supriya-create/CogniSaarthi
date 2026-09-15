@@ -5,12 +5,13 @@ import {
 } from "lucide-react";
 
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
-import { CaregiverNav } from "@/components/caregiver/CaregiverNav";
 import { SummaryTile } from "@/components/caregiver/SummaryTile";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { requireCaregiver } from "@/lib/auth/current-user";
 import { linkedUserFor } from "@/lib/caregiver/access";
 import { getDailySummary, getWeeklySummary } from "@/lib/summaries/queries";
+import { formatDayLabel } from "@/lib/utils/date";
 import type { Trend } from "@/lib/cognitive-performance/types";
 import { CalendarCheck, ListChecks, Bell, Repeat } from "lucide-react";
 import { SignOutButton } from "../SignOutButton";
@@ -41,23 +42,31 @@ function directionFor(
 }
 
 function TrendBadge({ trend }: { trend: Trend }) {
-  if (trend === "improving") {
-    return (
-      <span className="inline-flex items-center gap-1 text-success">
-        <MoveUpRight className="size-4" aria-hidden /> Improving
-      </span>
-    );
-  }
-  if (trend === "declining") {
-    return (
-      <span className="inline-flex items-center gap-1 text-warning">
-        <MoveDownRight className="size-4" aria-hidden /> More practice
-      </span>
-    );
-  }
+  // Icon + word together; the pill colour is only ever a third cue.
+  const config = {
+    improving: {
+      Icon: MoveUpRight,
+      label: "Improving",
+      tone: "border-success/25 bg-success-soft text-success",
+    },
+    declining: {
+      Icon: MoveDownRight,
+      label: "More practice",
+      tone: "border-warning/30 bg-warning-soft text-warning",
+    },
+    stable: {
+      Icon: ArrowRight,
+      label: "Stable",
+      tone: "border-border bg-surface-alt text-text-muted",
+    },
+  }[trend];
+
   return (
-    <span className="inline-flex items-center gap-1 text-text-muted">
-      <ArrowRight className="size-4" aria-hidden /> Stable
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-sm font-semibold ${config.tone}`}
+    >
+      <config.Icon className="size-4 shrink-0" aria-hidden />
+      {config.label}
     </span>
   );
 }
@@ -68,7 +77,7 @@ export default async function CaregiverSummaryPage() {
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+      <CaregiverShell action={<SignOutButton />} nav>
         <EmptyState
           title="No one is connected to your account yet."
           body="Once connected, a daily and weekly summary will appear here."
@@ -84,27 +93,35 @@ export default async function CaregiverSummaryPage() {
   ]);
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+    <CaregiverShell action={<SignOutButton />} nav>
       {/* ---------------- Daily ---------------- */}
-      <h1 className="font-serif text-3xl font-semibold">Today&apos;s summary</h1>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <SectionHeading
+        as="h1"
+        size="lg"
+        eyebrow={formatDayLabel(new Date(), "en-IN")}
+        title="Today's summary"
+      />
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryTile
           label="Activities"
           value={`${daily.activities.completed} / ${daily.activities.goal}`}
           hint="Completed today"
           Icon={ListChecks}
+          tone="primary"
         />
         <SummaryTile
           label="Memory"
           value={MEMORY_LABEL[daily.memory]}
           hint="Participation"
           Icon={CalendarCheck}
+          tone="secondary"
         />
         <SummaryTile
           label="Attention"
           value={daily.attention === "done" ? "Completed" : "Not yet today"}
           hint="Participation"
           Icon={CalendarCheck}
+          tone="accent"
         />
         <SummaryTile
           label="Reminders"
@@ -119,17 +136,13 @@ export default async function CaregiverSummaryPage() {
       </div>
 
       {/* ---------------- Weekly ---------------- */}
-      <div className="mt-10">
-        <h2 className="font-serif text-2xl font-semibold">
-          Cognisaarthi weekly summary
-        </h2>
-        <p className="mt-1 text-base text-text-muted">
-          The last seven days for {user.name}. This is a wellbeing overview,
-          not a medical report.
-        </p>
-      </div>
+      <SectionHeading
+        className="mt-12"
+        title="Cognisaarthi weekly summary"
+        description={`The last seven days for ${user.name}. This is a wellbeing overview, not a medical report.`}
+      />
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryTile
           label="Sessions"
           value={String(weekly.weekSessionCount)}
@@ -160,15 +173,15 @@ export default async function CaregiverSummaryPage() {
         />
       </div>
 
-      <section className="mt-8">
+      <section className="mt-10">
         <h3 className="font-serif text-xl font-semibold">Cognitive trends</h3>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
+        <div className="mt-4 overflow-hidden panel">
           <table className="w-full text-left text-base">
             <caption className="sr-only">
               Weekly cognitive indicator trend by area
             </caption>
             <thead>
-              <tr className="text-sm font-semibold tracking-wide text-text-muted uppercase">
+              <tr className="bg-surface-alt/60 text-sm font-semibold tracking-[0.08em] text-text-muted uppercase">
                 <th scope="col" className="px-5 py-3">Area</th>
                 <th scope="col" className="py-3">Last week → now</th>
                 <th scope="col" className="py-3 pr-5">Direction</th>
@@ -184,7 +197,7 @@ export default async function CaregiverSummaryPage() {
                         Building up a picture
                       </span>
                     ) : (
-                      <span className="tabular-nums">
+                      <span className="numeric">
                         {d.previous} → {d.current}
                       </span>
                     )}
@@ -201,7 +214,7 @@ export default async function CaregiverSummaryPage() {
         </div>
       </section>
 
-      <p className="mt-8 max-w-2xl text-sm leading-relaxed text-text-muted">
+      <p className="mt-10 rounded-2xl border border-border bg-surface-alt/60 px-5 py-4 text-base leading-relaxed text-text-muted">
         These figures describe how activities and reminders went. They are not
         a medical measurement and should not be read as a sign of decline or
         improvement in health.

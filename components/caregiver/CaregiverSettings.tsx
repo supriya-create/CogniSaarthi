@@ -105,7 +105,7 @@ export function CaregiverSettings({
           {TOGGLES.map((t) => (
             <label
               key={t.key}
-              className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-3.5"
+              className="flex cursor-pointer items-center justify-between gap-4 panel px-5 py-3.5"
             >
               <span className="flex flex-col">
                 <span className="text-base font-semibold">{t.label}</span>

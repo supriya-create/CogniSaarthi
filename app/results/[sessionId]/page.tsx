@@ -52,11 +52,11 @@ export default async function ResultPage({
 
   return (
     <PageShell header={<ElderlyHeader backHref="/home" backLabel={dict.home} />}>
-      <p className="text-center text-lg font-medium text-text-muted">
+      <p className="text-center text-base font-semibold tracking-[0.1em] text-text-muted uppercase">
         {definition?.name[language] ?? session.game.name}
       </p>
 
-      <div className="mt-4">
+      <div className="mt-5">
         <ResultCard
           tone={toneFor(result.score)}
           stars={result.stars}
@@ -69,20 +69,20 @@ export default async function ResultPage({
       </div>
 
       {personalMessage ? (
-        <p className="mt-6 text-center text-lg leading-relaxed text-text-muted">
+        <p className="mx-auto mt-6 max-w-md text-center text-lg leading-relaxed text-text-muted">
           {personalMessage}
         </p>
       ) : result.score < 50 ? (
-        <p className="mt-6 text-center text-lg leading-relaxed text-text-muted">
+        <p className="mx-auto mt-6 max-w-md text-center text-lg leading-relaxed text-text-muted">
           {dict.resultEncourage}
         </p>
       ) : null}
 
-      <p className="mt-8 text-center text-xl font-medium">
+      <p className="mt-9 text-center font-serif text-2xl font-semibold">
         {dict.resultAnotherQuestion}
       </p>
 
-      <div className="mt-5 flex flex-col gap-3">
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <LinkButton
           href={`/games/${session.gameId}`}
           fullWidth

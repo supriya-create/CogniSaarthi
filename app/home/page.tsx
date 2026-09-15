@@ -1,129 +1,132 @@
-import { Bell, Brain, CalendarDays, CircleCheck, Heart, LifeBuoy } from "lucide-react";
+import {
+  Bell,
+  CalendarHeart,
+  Heart,
+  LifeBuoy,
+  ListChecks,
+  Shapes,
+} from "lucide-react";
 
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageShell } from "@/components/layout/PageShell";
-import { ProgressDots } from "@/components/elderly/ProgressDots";
+import { HomeHero } from "@/components/elderly/HomeHero";
 import { QuickAction } from "@/components/elderly/QuickAction";
 import { TodaysJourney } from "@/components/elderly/TodaysJourney";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { requireUser } from "@/lib/auth/current-user";
 import {
   DAILY_GOAL,
   getGameIdsCompletedToday,
   getTodaysCompletedCount,
 } from "@/lib/db/queries";
-import { getDailyJourney } from "@/lib/cognitive-performance/profile";
-import { getDict } from "@/lib/i18n/dictionaries";
-import { greetingKey } from "@/lib/utils/date";
+import { getDailyPlan, getIntelligenceSnapshot } from "@/lib/intelligence/server";
+import { elderProgressKey } from "@/lib/intelligence/explanations";
+import { getDict, localeTag } from "@/lib/i18n/dictionaries";
+import { formatDayLabel, greetingKey } from "@/lib/utils/date";
 
 export default async function HomePage() {
   const user = await requireUser();
   const language = user.preference?.language ?? user.language;
   const dict = getDict(language);
 
-  // Phase 2: the home screen leads with a personalised plan built
-  // from the person's history. The journey orders activities weakest
-  // area first; each opens at a level the engine chose for them.
-  const [completedToday, playedToday, journey] = await Promise.all([
+  // Phase 6: the plan now comes from the longitudinal intelligence
+  // layer, which balances practice need against variety and recent
+  // success — and quietly shortens the day when activities have been
+  // hard work, or when someone is coming back after a gap. Difficulty
+  // is still decided by the Phase 2 engine when each activity opens.
+  const [completedToday, playedToday, plan, snapshot] = await Promise.all([
     getTodaysCompletedCount(user.id),
     getGameIdsCompletedToday(user.id),
-    getDailyJourney(user.id),
+    getDailyPlan(user.id),
+    getIntelligenceSnapshot(user.id),
   ]);
 
   const goalMet = completedToday >= DAILY_GOAL;
 
-  return (
-    <PageShell header={<ElderlyHeader />} nav={<BottomNav
-          dict={dict}
-          voice={
-            user.preference?.voiceEnabled
-              ? { language, speechRate: user.preference.speechRate }
-              : undefined
-          }
-        />}>
-      <section className="animate-fade-up">
-        <h1 className="font-serif text-4xl leading-tight font-semibold">
-          {dict[greetingKey()]}, {user.name}
-        </h1>
-        <p className="mt-3 text-xl text-text-muted">{dict.homeInvite}</p>
-      </section>
+  // One warm, non-medical line about their routine. Never a score.
+  const progressKey = elderProgressKey(snapshot.routine);
+  const progressLine = dict[progressKey].replace(
+    "{count}",
+    String(snapshot.routine.totalActivities),
+  );
 
-      <div className="mt-8">
+  const voice = user.preference?.voiceEnabled
+    ? { language, speechRate: user.preference.speechRate }
+    : undefined;
+
+  return (
+    <PageShell
+      header={<ElderlyHeader dict={dict} />}
+      hero={
+        <HomeHero
+          greeting={dict[greetingKey()]}
+          name={user.name}
+          invite={dict.homeInvite}
+          dateLabel={formatDayLabel(new Date(), localeTag(language))}
+          completed={completedToday}
+          goal={DAILY_GOAL}
+          goalMet={goalMet}
+          goalMetLine={dict.homeGoalMet}
+          progressLine={progressLine}
+          progressLabel={dict.todaysProgress}
+          ofLabel={dict.ofTotal}
+        />
+      }
+      nav={<BottomNav dict={dict} voice={voice} />}
+    >
+      <div className="animate-fade-up">
         <TodaysJourney
-          journey={journey}
+          plan={plan}
           completedGameIds={playedToday}
           language={language}
           dict={dict}
         />
       </div>
 
-      <section
-        className={`mt-8 rounded-2xl border p-5 shadow-soft ${
-          goalMet
-            ? "border-success/30 bg-success-soft"
-            : "border-border bg-surface"
-        }`}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-serif text-xl font-semibold">
-            {dict.todaysProgress}
-          </h2>
-          <ProgressDots
-            total={DAILY_GOAL}
-            filled={Math.min(completedToday, DAILY_GOAL)}
-            label={dict.todaysProgress}
-            ofLabel={dict.ofTotal}
-          />
-        </div>
+      <section className="mt-10">
+        <SectionHeading title={dict.quickActions} size="md" />
 
-        {goalMet ? (
-          <p className="mt-2 flex items-start gap-2 text-lg font-medium text-success">
-            <CircleCheck className="mt-1 size-5 shrink-0" aria-hidden />
-            {dict.homeGoalMet}
-          </p>
-        ) : (
-          <p className="mt-2 text-lg text-text-muted">
-            {Math.min(completedToday, DAILY_GOAL)} / {DAILY_GOAL}{" "}
-            {dict.progressOf}
-          </p>
-        )}
-      </section>
-
-      <section className="mt-8">
-        <h2 className="font-serif text-xl font-semibold">
-          {dict.quickActions}
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="stagger mt-5 grid gap-3.5 sm:grid-cols-2">
           <QuickAction
             href="/games"
             label={dict.navGames}
-            Icon={Brain}
+            description={dict.gamesSubtitle}
+            Icon={Shapes}
             tone="primary"
           />
           <QuickAction
             href="/memories"
             label={dict.navMemories}
+            description={dict.memoriesBody}
             Icon={Heart}
             tone="secondary"
           />
           <QuickAction
             href="/reminders"
             label={dict.navReminders}
+            description={dict.homeTileReminders}
             Icon={Bell}
             tone="tea"
           />
           <QuickAction
             href="/routine"
             label={dict.navRoutine}
-            Icon={CalendarDays}
-            tone="secondary"
+            description={dict.homeTileRoutine}
+            Icon={CalendarHeart}
+            tone="sage"
           />
-        </div>
-
-        <div className="mt-3">
+          <QuickAction
+            href="/history"
+            label={dict.navHistory}
+            description={dict.historySubtitle}
+            Icon={ListChecks}
+            tone="sage"
+          />
           <QuickAction
             href="/help"
-            label={dict.sosButton}
+            label={dict.sosTitle}
+            description={dict.homeTileHelp}
             Icon={LifeBuoy}
             tone="primary"
           />

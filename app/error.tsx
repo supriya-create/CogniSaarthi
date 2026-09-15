@@ -4,11 +4,14 @@ import { useEffect } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
-import { LogoMark } from "@/components/ui/Logo";
+import { MessageScreen } from "@/components/ui/MessageScreen";
 
 /**
  * No stack trace, no error code, no apology in six sentences.
  * One plain statement and one thing to press.
+ *
+ * The real error goes to the console, where a developer will find it,
+ * and nowhere near the person using the app.
  */
 export default function GlobalError({
   error,
@@ -22,13 +25,10 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-bg px-6 text-center">
-      <LogoMark className="size-20 opacity-70" />
-      <h1 className="mt-8 font-serif text-3xl font-semibold">
-        Something went wrong.
-      </h1>
-      <p className="mt-3 text-xl text-text-muted">Let&apos;s try that again.</p>
-      <div className="mt-8 w-full max-w-xs">
+    <MessageScreen
+      title="Something went wrong."
+      body="We couldn't load this right now. Please try again."
+      action={
         <Button
           fullWidth
           onClick={reset}
@@ -36,7 +36,7 @@ export default function GlobalError({
         >
           Try again
         </Button>
-      </div>
-    </div>
+      }
+    />
   );
 }

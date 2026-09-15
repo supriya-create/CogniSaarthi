@@ -3,14 +3,11 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  CheckCircle2,
-  Circle,
-  TriangleAlert,
-} from "lucide-react";
+import { BellOff, CheckCircle2, Circle, TriangleAlert } from "lucide-react";
 import type { AlertSeverity, AlertStatus } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -35,17 +32,42 @@ const FILTERS: { key: string; label: string }[] = [
   { key: "resolved", label: "Resolved" },
 ];
 
+/**
+ * Severity carries a distinct icon SHAPE as well as a colour and a
+ * word — a triangle, a ring, a tick — so the hierarchy survives a
+ * greyscale screen or a colour-blind reader.
+ */
 const SEVERITY_META: Record<
   AlertSeverity,
-  { Icon: typeof Circle; className: string; label: string }
+  {
+    Icon: typeof Circle;
+    className: string;
+    label: string;
+    edge: string;
+    tone: string;
+  }
 > = {
   IMPORTANT: {
     Icon: TriangleAlert,
     className: "text-warning",
     label: "Important",
+    edge: "border-l-warning",
+    tone: "border-warning/30 bg-warning-soft text-warning",
   },
-  ATTENTION: { Icon: Circle, className: "text-secondary", label: "Attention" },
-  INFO: { Icon: CheckCircle2, className: "text-success", label: "Info" },
+  ATTENTION: {
+    Icon: Circle,
+    className: "text-secondary",
+    label: "Attention",
+    edge: "border-l-secondary",
+    tone: "border-secondary/25 bg-secondary-soft text-secondary",
+  },
+  INFO: {
+    Icon: CheckCircle2,
+    className: "text-success",
+    label: "Info",
+    edge: "border-l-success",
+    tone: "border-success/25 bg-success-soft text-success",
+  },
 };
 
 export function AlertCenter({
@@ -71,19 +93,22 @@ export function AlertCenter({
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-semibold">Needs your attention</h1>
+      <h1 className="font-serif text-3xl font-semibold sm:text-4xl">
+        Needs your attention
+      </h1>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <Link
             key={f.key}
             href={`/caregiver/alerts?filter=${f.key}`}
             aria-current={filter === f.key ? "page" : undefined}
             className={cn(
-              "rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors",
+              "inline-flex min-h-[2.5rem] items-center rounded-full border px-4 py-1.5 text-base font-semibold",
+              "transition-[background-color,color,box-shadow] duration-200 ease-gentle",
               filter === f.key
-                ? "border-primary bg-primary-soft text-primary"
-                : "border-border bg-surface text-text-muted hover:bg-surface-alt",
+                ? "border-primary/30 bg-primary-soft text-primary shadow-soft"
+                : "border-border bg-surface text-text-muted hover:bg-surface-alt hover:text-text",
             )}
           >
             {f.label}
@@ -92,9 +117,13 @@ export function AlertCenter({
       </div>
 
       {alerts.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-10 text-center text-text-muted">
-          Nothing here right now. That is usually good news.
-        </p>
+        <div className="mt-6">
+          <EmptyState
+            title="Nothing here right now."
+            body="That is usually good news."
+            icon={<BellOff className="size-10" aria-hidden />}
+          />
+        </div>
       ) : (
         <ul className="mt-6 flex flex-col gap-3">
           {alerts.map((alert) => {
@@ -105,10 +134,11 @@ export function AlertCenter({
               <li
                 key={alert.id}
                 className={cn(
-                  "rounded-2xl border bg-surface p-5 shadow-soft",
+                  "rounded-2xl border border-l-4 bg-surface p-5 shadow-soft",
+                  meta.edge,
                   alert.status === "UNREAD"
-                    ? "border-border-strong"
-                    : "border-border",
+                    ? "border-y-border-strong border-r-border-strong"
+                    : "border-y-border border-r-border",
                   resolved && "opacity-70",
                 )}
               >
@@ -124,14 +154,17 @@ export function AlertCenter({
                       </span>
                       <span
                         className={cn(
-                          "rounded-full border px-2 py-0.5 text-xs font-semibold",
-                          "border-border bg-surface-alt text-text-muted",
+                          "rounded-full border px-2.5 py-0.5 text-sm font-semibold",
+                          meta.tone,
                         )}
                       >
                         {meta.label}
                       </span>
                       {alert.status === "UNREAD" ? (
-                        <span className="size-2 rounded-full bg-primary" aria-label="Unread" />
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-sm font-semibold text-primary">
+                          <span aria-hidden className="size-2 rounded-full bg-primary" />
+                          Unread
+                        </span>
                       ) : null}
                     </span>
                     <span className="mt-1 text-base text-text-muted">
@@ -180,7 +213,7 @@ export function AlertCenter({
         </ul>
       )}
 
-      <p className="mt-8 max-w-2xl text-sm leading-relaxed text-text-muted">
+      <p className="mt-10 rounded-2xl border border-border bg-surface-alt/60 px-5 py-4 text-base leading-relaxed text-text-muted">
         These are gentle signals drawn from activity and reminders. They are
         not a medical measurement and never a diagnosis.
       </p>

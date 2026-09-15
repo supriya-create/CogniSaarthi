@@ -2,32 +2,53 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Play, RotateCcw, Volume2 } from "lucide-react";
+import { Clock, House, Play, RotateCcw, Volume2 } from "lucide-react";
 import type { Difficulty, Language, SpeechRate } from "@prisma/client";
 
-import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Button, LinkButton } from "@/components/ui/Button";
+import { GlowDecor } from "@/components/ui/Decor";
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
 import { PageShell } from "@/components/layout/PageShell";
 import { DifficultySelector } from "@/components/games/DifficultySelector";
 import { GAME_COMPONENTS } from "@/components/games/registry";
+import { ResultCard } from "@/components/games/ResultCard";
+import { SavedLocallyBadge } from "@/components/offline/OfflineStatus";
 import { LogoMark } from "@/components/ui/Logo";
 import { getDict } from "@/lib/i18n/dictionaries";
+import { difficultyLabel } from "@/lib/i18n/labels";
 import { getDefinition } from "@/lib/game-engine/definitions";
+import { toneFor } from "@/lib/game-engine/scoring";
+import { ESTIMATED_MINUTES_PER_ACTIVITY } from "@/lib/cognitive-performance/config";
+import { resultMessageKey } from "@/lib/cognitive-performance/recommendations";
 import { useVoice } from "@/lib/voice/useVoice";
+import { newId } from "@/lib/offline/serialization";
+import { recordGamePlayed } from "@/lib/offline/actions";
+import { useConnection } from "@/lib/offline/useOffline";
 import type { GameId, SessionOutcome } from "@/lib/game-engine/types";
+import type { LocalGameSession } from "@/lib/offline/types";
 
-type Phase = "intro" | "playing" | "saving" | "failed";
+type Phase = "intro" | "playing" | "saving" | "result";
 
 /**
- * Orchestrates one activity: choose a level, open a session, play,
- * store the result, show it.
+ * Orchestrates one activity: choose a level, play, save, show the result.
  *
- * All three games share this. A new game plugs into the registry and
- * inherits the whole lifecycle — instructions, session records,
- * scoring, the result screen — without touching this file.
+ * Phase 5 made this OFFLINE-FIRST. Two things changed, both in service
+ * of the same rule — the elder never waits for the network:
+ *
+ *  1. Starting no longer blocks on the server. A session id is
+ *     generated here and the "session started" row is opened in the
+ *     background; if that request fails (no signal), play begins
+ *     anyway. The id travels with the result later, so the server
+ *     recognises the two as the same session.
+ *  2. Finishing writes to this device first and shows the result
+ *     immediately. Reaching the server is queued and retried in the
+ *     background. The score shown here is recomputed server-side on
+ *     sync, and the server's value is the one that counts.
  */
 export function GameRunner({
   gameId,
+  userId,
   language,
   initialDifficulty,
   voiceEnabled = false,
@@ -35,6 +56,7 @@ export function GameRunner({
   speechRate = "NORMAL",
 }: {
   gameId: GameId;
+  userId: string;
   language: Language;
   initialDifficulty: Difficulty;
   voiceEnabled?: boolean;
@@ -44,12 +66,19 @@ export function GameRunner({
   const router = useRouter();
   const dict = getDict(language);
   const voice = useVoice({ language, rate: speechRate });
+  const connection = useConnection();
 
   const definition = getDefinition(gameId);
   const PlayComponent = GAME_COMPONENTS[gameId];
+  // Plain language for what the activity helps with; the clinical
+  // domain name never reaches this side of the product.
+  const benefit = definition
+    ? (dict[`benefit${definition.domain}` as keyof typeof dict] as
+        | string
+        | undefined)
+    : undefined;
 
-  // Auto-read the instructions once on the intro, if the person has
-  // asked for it. Guarded so it speaks a single time.
+  // Auto-read the instructions once on the intro, if asked for.
   const spokenRef = useRef(false);
   useEffect(() => {
     if (!definition || !voiceEnabled || !autoReadInstructions) return;
@@ -61,70 +90,66 @@ export function GameRunner({
 
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [phase, setPhase] = useState<Phase>("intro");
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [pendingOutcome, setPendingOutcome] = useState<SessionOutcome | null>(
-    null,
-  );
+  const [saved, setSaved] = useState<LocalGameSession | null>(null);
+
+  // Identity and start time for this play, held across the activity.
+  const clientSessionIdRef = useRef<string | null>(null);
+  const startedAtRef = useRef<Date | null>(null);
 
   if (!definition) return null;
 
-  async function begin() {
-    setPhase("saving");
-    try {
-      const response = await fetch("/api/games/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameId, difficulty }),
-      });
-      if (!response.ok) throw new Error("could not start");
+  function begin() {
+    const clientSessionId = newId();
+    clientSessionIdRef.current = clientSessionId;
+    startedAtRef.current = new Date();
 
-      const data = (await response.json()) as { sessionId: string };
-      setSessionId(data.sessionId);
-      setPhase("playing");
-    } catch {
-      setPhase("failed");
-    }
+    // Open the server-side row in the BACKGROUND so an abandoned
+    // attempt is still recorded when there is a connection. Failure is
+    // fine: the same clientSessionId is sent again on sync, and the
+    // server treats the two as one session.
+    void fetch("/api/games/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gameId, difficulty, clientSessionId }),
+    }).catch(() => {
+      // No signal. The activity starts regardless.
+    });
+
+    // Nothing is awaited — play begins at once.
+    setPhase("playing");
   }
 
-  async function save(outcome: SessionOutcome, id: string) {
-    setPendingOutcome(outcome);
+  async function save(outcome: SessionOutcome) {
     setPhase("saving");
-    try {
-      const response = await fetch("/api/games/session/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: id,
-          durationMs: outcome.durationMs,
-          rounds: outcome.rounds,
-        }),
-      });
-      if (!response.ok) throw new Error("could not save");
-
-      router.replace(`/results/${id}`);
-    } catch {
-      setPhase("failed");
-    }
+    const session = await recordGamePlayed({
+      userId,
+      gameId,
+      difficulty,
+      language,
+      rounds: outcome.rounds,
+      durationMs: outcome.durationMs,
+      startedAt: startedAtRef.current ?? new Date(),
+      clientSessionId: clientSessionIdRef.current ?? undefined,
+    });
+    setSaved(session);
+    setPhase("result");
   }
 
-  async function quit(id: string) {
-    // Close the row before leaving so it is recorded as stopped
-    // rather than left open forever. Navigating regardless: a person
-    // who wants out should not be held by a failed request.
-    try {
-      await fetch("/api/games/session/abandon", {
+  function quit() {
+    const id = clientSessionIdRef.current;
+    if (id) {
+      // Best effort only; a person who wants out is never held up.
+      void fetch("/api/games/session/abandon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: id }),
-      });
-    } catch {
-      // Nothing to tell the user; they asked to leave.
+        body: JSON.stringify({ clientSessionId: id }),
+      }).catch(() => {});
     }
     router.push("/home");
   }
 
   // ---- playing -------------------------------------------------
-  if (phase === "playing" && sessionId) {
+  if (phase === "playing") {
     return (
       <PlayComponent
         config={definition.difficulties[difficulty]}
@@ -132,51 +157,97 @@ export function GameRunner({
         language={language}
         voiceEnabled={voiceEnabled}
         speechRate={speechRate}
-        onComplete={(outcome: SessionOutcome) => save(outcome, sessionId)}
-        onQuit={() => void quit(sessionId)}
+        onComplete={(outcome: SessionOutcome) => void save(outcome)}
+        onQuit={quit}
       />
     );
   }
 
-  // ---- saving --------------------------------------------------
+  // ---- saving (local write only — momentary) --------------------
   if (phase === "saving") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-bg px-6">
-        <LogoMark className="size-16 motion-safe:animate-pulse" />
-        <p className="text-xl text-text-muted" role="status">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6">
+        <LogoMark className="size-20 motion-safe:animate-breathe" />
+        <p className="text-xl font-medium text-text-muted" role="status">
           {dict.loading}
         </p>
       </div>
     );
   }
 
-  // ---- something went wrong ------------------------------------
-  if (phase === "failed") {
+  // ---- result (rendered from the local record, works offline) ---
+  if (phase === "result" && saved) {
+    const totalCount = saved.rounds.reduce((sum, r) => sum + r.total, 0);
+    const correctCount = saved.rounds.reduce((sum, r) => sum + r.correct, 0);
+
+    // Without history to hand (we may be offline), the message is
+    // chosen from this session's score alone — never claiming a level
+    // change the engine has not actually decided.
+    const personalMessage =
+      dict[
+        resultMessageKey({
+          score: saved.score,
+          direction: "hold",
+          reason: "held",
+        })
+      ];
+
     return (
       <PageShell
-        header={<ElderlyHeader backHref="/games" backLabel={dict.back} />}
+        header={<ElderlyHeader backHref="/home" backLabel={dict.home} />}
       >
-        <div className="mx-auto max-w-md py-10 text-center">
-          <h1 className="font-serif text-3xl font-semibold">
-            {dict.errorTitle}
-          </h1>
-          <p className="mt-3 text-xl text-text-muted">{dict.errorBody}</p>
-          <div className="mt-8">
-            <Button
-              fullWidth
-              icon={<RotateCcw className="size-6" aria-hidden />}
-              onClick={() => {
-                // Retry the step that failed, not the whole activity.
-                if (pendingOutcome && sessionId) {
-                  void save(pendingOutcome, sessionId);
-                } else {
-                  void begin();
-                }
-              }}
-            >
-              {dict.tryAgain}
-            </Button>
-          </div>
+        <p className="text-center text-base font-semibold tracking-[0.1em] text-text-muted uppercase">
+          {definition.name[language]}
+        </p>
+
+        <div className="mt-5">
+          <ResultCard
+            tone={toneFor(saved.score)}
+            stars={saved.stars}
+            correctCount={correctCount}
+            totalCount={totalCount}
+            durationMs={saved.durationMs}
+            difficultyLabel={difficultyLabel(saved.difficulty, dict)}
+            dict={dict}
+          />
+        </div>
+
+        <p className="mx-auto mt-6 max-w-md text-center text-lg leading-relaxed text-text-muted">
+          {saved.score < 50 ? dict.resultEncourage : personalMessage}
+        </p>
+
+        {/* Quiet reassurance when there is no connection: the activity
+            is safely stored here and will travel on by itself. */}
+        {connection === "OFFLINE" ? (
+          <p className="mt-4 flex justify-center">
+            <SavedLocallyBadge language={language} />
+          </p>
+        ) : null}
+
+        <p className="mt-9 text-center font-serif text-2xl font-semibold">
+          {dict.resultAnotherQuestion}
+        </p>
+
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <Button
+            fullWidth
+            icon={<RotateCcw className="size-6" aria-hidden />}
+            onClick={() => {
+              setSaved(null);
+              clientSessionIdRef.current = null;
+              setPhase("intro");
+            }}
+          >
+            {dict.resultPlayAgain}
+          </Button>
+          <LinkButton
+            href="/home"
+            variant="outline"
+            fullWidth
+            icon={<House className="size-6" aria-hidden />}
+          >
+            {dict.resultBackHome}
+          </LinkButton>
         </div>
       </PageShell>
     );
@@ -184,37 +255,49 @@ export function GameRunner({
 
   // ---- intro ---------------------------------------------------
   return (
-    <PageShell
-      header={<ElderlyHeader backHref="/games" backLabel={dict.back} />}
-    >
+    <PageShell header={<ElderlyHeader backHref="/games" backLabel={dict.back} />}>
       <div className="animate-fade-up">
-        <div className="flex items-center gap-4">
+        {/* The activity introduces itself: a large mark, the name, and
+            what it is good for — the same three things the card in the
+            picker showed, so arriving here feels continuous. */}
+        <div className="panel surface-glow relative isolate overflow-hidden px-6 py-8 text-center">
+          <GlowDecor className="-top-16 left-1/2 size-64 -translate-x-1/2" />
           <span
             aria-hidden
-            className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-border bg-surface text-3xl shadow-soft"
+            className="relative mx-auto flex size-24 items-center justify-center rounded-3xl border border-border bg-surface text-5xl shadow-lift"
           >
             {definition.glyph}
           </span>
-          <h1 className="font-serif text-3xl leading-tight font-semibold">
+          <h1 className="relative mt-5 font-serif text-3xl leading-tight font-semibold sm:text-4xl">
             {definition.name[language]}
           </h1>
+          <p className="relative mx-auto mt-3 max-w-md text-lg leading-relaxed text-text-muted">
+            {definition.shortDescription[language]}
+          </p>
+          <div className="relative mt-5 flex flex-wrap justify-center gap-2">
+            <Badge
+              tone="neutral"
+              icon={<Clock className="size-4 shrink-0" aria-hidden />}
+            >
+              {dict.gameMinutesShort.replace(
+                "{n}",
+                String(ESTIMATED_MINUTES_PER_ACTIVITY),
+              )}
+            </Badge>
+            {benefit ? <Badge tone="primary">{benefit}</Badge> : null}
+          </div>
         </div>
 
-        <section className="mt-7 rounded-2xl border border-border bg-surface p-6 shadow-soft">
-          <div className="flex items-start justify-between gap-3">
+        <section className="panel mt-6 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <h2 className="font-serif text-xl font-semibold">
               {dict.howToPlay}
             </h2>
-            {/* Hear the instructions read aloud — important for anyone
-                who finds reading tiring. Only offered when the device
-                can actually speak. */}
             {voice.supported.output ? (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  voice.speak(definition.instructions[language])
-                }
+                onClick={() => voice.speak(definition.instructions[language])}
                 icon={<Volume2 className="size-5" aria-hidden />}
               >
                 {dict.hearAgain}
@@ -226,7 +309,7 @@ export function GameRunner({
           </p>
         </section>
 
-        <section className="mt-7">
+        <section className="mt-8">
           <h2 className="font-serif text-xl font-semibold">
             {dict.chooseDifficulty}
           </h2>
@@ -239,9 +322,10 @@ export function GameRunner({
           </div>
         </section>
 
-        <div className="mt-8">
+        <div className="mt-9">
           <Button
             fullWidth
+            size="xl"
             onClick={begin}
             icon={<Play className="size-6" aria-hidden />}
           >

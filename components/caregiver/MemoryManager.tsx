@@ -158,7 +158,7 @@ export function MemoryManager({
       ) : null}
 
       {memories.length === 0 && !draft ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-10 text-center text-text-muted">
+        <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-12 text-center text-lg text-text-muted">
           No memories yet. Add a family member or a favourite place to begin.
         </p>
       ) : (
@@ -166,7 +166,7 @@ export function MemoryManager({
           {memories.map((memory) => (
             <li
               key={memory.id}
-              className="flex gap-4 rounded-2xl border border-border bg-surface p-4 shadow-soft"
+              className="flex gap-4 panel p-4 shadow-soft"
             >
               <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-surface-alt">
                 {memory.imagePath ? (
@@ -264,7 +264,7 @@ function MemoryForm({
   error: string | null;
 }) {
   return (
-    <div className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-soft">
+    <div className="mt-6 panel p-5 shadow-soft">
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-xl font-semibold">
           {draft.id ? "Edit memory" : "Add a memory"}

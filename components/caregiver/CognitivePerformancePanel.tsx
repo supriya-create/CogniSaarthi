@@ -33,21 +33,21 @@ function TrendBadge({ trend }: { trend: Trend }) {
   const config = {
     improving: {
       Icon: TrendingUp,
-      className: "text-success",
+      className: "border-success/25 bg-success-soft text-success",
     },
     stable: {
       Icon: Minus,
-      className: "text-text-muted",
+      className: "border-border bg-surface-alt text-text-muted",
     },
     declining: {
       Icon: TrendingDown,
-      className: "text-warning",
+      className: "border-warning/30 bg-warning-soft text-warning",
     },
   }[trend];
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 text-sm font-semibold ${config.className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-sm font-semibold ${config.className}`}
     >
       <config.Icon className="size-4" aria-hidden />
       {trendLabel(trend)}
@@ -55,29 +55,36 @@ function TrendBadge({ trend }: { trend: Trend }) {
   );
 }
 
-/** A minimal trend line. Decorative — the label carries the meaning. */
+/**
+ * A minimal trend line with a soft fill beneath it. Decorative — the
+ * label and the number carry the meaning, and the line is never the
+ * only place a direction is stated.
+ */
 function Sparkline({ scores }: { scores: number[] }) {
   if (scores.length < 2) return null;
-  const width = 96;
-  const height = 28;
+  const width = 104;
+  const height = 32;
   const max = 100;
   const step = width / (scores.length - 1);
-  const points = scores
-    .map((s, i) => `${i * step},${height - (s / max) * height}`)
-    .join(" ");
+  const coords = scores.map(
+    (s, i) => `${i * step},${height - (s / max) * height}`,
+  );
+  const line = coords.join(" ");
+  const area = `0,${height} ${line} ${width},${height}`;
 
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className="h-7 w-24"
+      className="h-8 w-26"
       aria-hidden
       preserveAspectRatio="none"
     >
+      <polygon points={area} fill="var(--c-primary)" opacity="0.12" />
       <polyline
-        points={points}
+        points={line}
         fill="none"
-        stroke="var(--color-secondary)"
-        strokeWidth={2}
+        stroke="var(--c-primary)"
+        strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -93,13 +100,13 @@ export function CognitivePerformancePanel({
   userName: string;
 }) {
   return (
-    <section className="mt-9">
+    <section className="mt-10">
       <h2 className="font-serif text-2xl font-semibold">Activity performance</h2>
-      <p className="mt-1.5 text-base text-text-muted">
+      <p className="mt-2 text-base leading-relaxed text-text-muted">
         How {userName}&apos;s recent activities have been going, by area.
       </p>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {profiles.map((profile) => {
           const { performance, recommendation } = profile;
           const name = DOMAIN_NAME[performance.domain];
@@ -107,7 +114,7 @@ export function CognitivePerformancePanel({
           return (
             <div
               key={performance.domain}
-              className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-soft"
+              className="panel flex flex-col p-5"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-serif text-xl font-semibold">{name}</h3>
@@ -123,7 +130,7 @@ export function CognitivePerformancePanel({
               ) : (
                 <>
                   <div className="mt-2 flex items-end justify-between gap-3">
-                    <p className="font-serif text-4xl font-semibold tabular-nums">
+                    <p className="numeric font-serif text-4xl leading-none font-semibold">
                       {performance.indicator}
                       <span className="text-xl text-text-muted">%</span>
                     </p>
@@ -140,7 +147,7 @@ export function CognitivePerformancePanel({
                 {explainRecommendation(recommendation)}
               </p>
 
-              <p className="mt-3 text-xs font-medium tracking-wide text-text-muted uppercase">
+              <p className="mt-3 text-xs font-semibold tracking-[0.1em] text-text-muted uppercase">
                 Personalisation: {CONFIDENCE_LABEL[performance.confidence]}
               </p>
             </div>

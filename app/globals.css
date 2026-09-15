@@ -3,76 +3,292 @@
 /* ============================================================
    COGNISAARTHI DESIGN SYSTEM — "Warm Digital Companion"
    ------------------------------------------------------------
-   Earth-toned, high-contrast, generously spaced. Every colour
-   pairing used for text meets WCAG AA (>= 4.5:1); ratios are
-   noted beside each token. Accent is a FILL colour only — it
-   carries dark text, never light.
+   One palette, two themes. Every colour used for text meets
+   WCAG AA (>= 4.5:1) against the surface it sits on, in BOTH
+   light and dark; ratios are noted beside each token.
+
+   Theming works by indirection: `@theme inline` makes every
+   Tailwind utility compile to `var(--x)` rather than to a baked
+   hex, so swapping the raw values under `[data-theme]` re-skins
+   the whole product without a single `dark:` class.
    ============================================================ */
 
-@theme {
+@theme inline {
   /* ---- Surfaces ---- */
-  --color-bg: #f7f2ea; /* warm paper */
-  --color-surface: #ffffff;
-  --color-surface-alt: #f1e8da; /* sunken panels, inactive tiles */
-  --color-surface-sunken: #ebe0ce;
+  --color-bg: var(--c-bg);
+  --color-bg-deep: var(--c-bg-deep);
+  --color-surface: var(--c-surface);
+  --color-surface-alt: var(--c-surface-alt);
+  --color-surface-sunken: var(--c-surface-sunken);
+  --color-surface-raised: var(--c-surface-raised);
 
   /* ---- Brand ---- */
-  --color-primary: #a64b2a; /* terracotta   5.7:1 on white */
-  --color-primary-strong: #8a3c20; /* pressed / hover           */
-  --color-primary-soft: #f6e5dc; /* tinted fill, dark text on top */
-  --color-secondary: #2f6b5e; /* tea-garden green  6.2:1 on white */
-  --color-secondary-strong: #235348;
-  --color-secondary-soft: #dfeae6;
-  --color-accent: #d98a2b; /* marigold — FILL ONLY (2.8:1) */
-  --color-accent-soft: #fbeed8;
+  --color-primary: var(--c-primary);
+  --color-primary-strong: var(--c-primary-strong);
+  --color-primary-soft: var(--c-primary-soft);
+  --color-primary-tint: var(--c-primary-tint);
+  --color-secondary: var(--c-secondary);
+  --color-secondary-strong: var(--c-secondary-strong);
+  --color-secondary-soft: var(--c-secondary-soft);
+  --color-accent: var(--c-accent);
+  --color-accent-strong: var(--c-accent-strong);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-sage: var(--c-sage);
+  --color-sage-soft: var(--c-sage-soft);
 
   /* ---- Text ---- */
-  --color-text: #2a231d; /* 14.8:1 on paper */
-  --color-text-muted: #6b5d50; /*  5.7:1 on paper */
-  --color-text-inverse: #fdf9f3;
+  --color-text: var(--c-text);
+  --color-text-muted: var(--c-text-muted);
+  --color-text-faint: var(--c-text-faint);
+  --color-text-inverse: var(--c-text-inverse);
 
   /* ---- Feedback ---- */
-  --color-success: #2e6b3e; /* 6.2:1 */
-  --color-success-soft: #e2eee4;
-  --color-warning: #8a5a00; /* 5.9:1 */
-  --color-warning-soft: #fbeed8;
-  --color-error: #a32f2f; /* 7.0:1 */
-  --color-error-soft: #f8e3e1;
+  --color-success: var(--c-success);
+  --color-success-soft: var(--c-success-soft);
+  --color-warning: var(--c-warning);
+  --color-warning-soft: var(--c-warning-soft);
+  --color-error: var(--c-error);
+  --color-error-soft: var(--c-error-soft);
 
   /* ---- Lines ---- */
-  --color-border: #e0d5c6;
-  --color-border-strong: #c9b9a3;
-  --color-focus: #1f5f8b; /* deliberately distinct from brand */
+  --color-border: var(--c-border);
+  --color-border-strong: var(--c-border-strong);
+  --color-focus: var(--c-focus);
 
   /* ---- Typography ----
-     Base root size is 18px (see html rule below), so 1rem = 18px
-     before the user's text-size preference is applied. */
-  --font-sans: var(--font-inter), var(--font-noto-deva),
+     Base root size is 18px (see the html rule below), so 1rem =
+     18px before the user's text-size preference is applied. */
+  --font-sans: var(--font-jakarta), var(--font-noto-deva),
     var(--font-noto-beng), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-lora), var(--font-noto-deva),
+  --font-serif: var(--font-fraunces), var(--font-noto-deva),
     var(--font-noto-beng), Georgia, "Times New Roman", serif;
 
-  /* ---- Radii — soft, never pill-shaped ---- */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.75rem;
+  /* ---- Radii — soft and generous, never pill-shaped on cards ---- */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-2xl);
+  --radius-3xl: var(--r-3xl);
 
-  /* ---- Shadows — warm-tinted, low elevation ---- */
-  --shadow-soft: 0 1px 2px rgb(74 56 40 / 0.06), 0 2px 8px rgb(74 56 40 / 0.05);
-  --shadow-lift: 0 2px 4px rgb(74 56 40 / 0.07), 0 8px 20px rgb(74 56 40 / 0.08);
+  /* ---- Elevation — warm-tinted, low, layered ---- */
+  --shadow-soft: var(--e-soft);
+  --shadow-lift: var(--e-lift);
+  --shadow-float: var(--e-float);
+  --shadow-inset: var(--e-inset);
 
-  /* ---- Motion — exactly two named transitions ---- */
-  --ease-gentle: cubic-bezier(0.22, 0.61, 0.36, 1);
-  --animate-fade-up: fade-up 0.22s var(--ease-gentle) both;
-  --animate-pop: pop 0.22s var(--ease-gentle) both;
+  /* ---- Motion ---- */
+  --ease-gentle: var(--m-gentle);
+  --ease-out-soft: var(--m-soft);
+  --animate-fade-up: var(--a-fade-up);
+  --animate-fade-in: var(--a-fade-in);
+  --animate-pop: var(--a-pop);
+  --animate-breathe: var(--a-breathe);
+  --animate-ripple: var(--a-ripple);
+  --animate-shimmer: var(--a-shimmer);
+  --animate-draw: var(--a-draw);
 }
+
+/* Shape and motion do not change between themes, so they are
+   declared once. The `@theme` block above only points at them. */
+:root {
+  --r-sm: 0.5rem;
+  --r-md: 0.75rem;
+  --r-lg: 1rem;
+  --r-xl: 1.25rem;
+  --r-2xl: 1.75rem;
+  --r-3xl: 2.25rem;
+
+  --m-gentle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --m-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --a-fade-up: fade-up 0.32s var(--m-soft) both;
+  --a-fade-in: fade-in 0.28s var(--m-gentle) both;
+  --a-pop: pop 0.34s var(--m-soft) both;
+  --a-breathe: breathe 2.6s ease-in-out infinite;
+  --a-ripple: ripple 1.8s var(--m-soft) infinite;
+  --a-shimmer: shimmer 1.6s linear infinite;
+  --a-draw: draw 0.7s var(--m-soft) both;
+}
+
+/* ============================================================
+   LIGHT THEME — warm paper, deep forest green, clay, gold
+   ============================================================ */
+
+:root {
+  --c-bg: #faf6ef; /* warm paper                          */
+  --c-bg-deep: #f2ebe0; /* the page behind the page            */
+  --c-surface: #ffffff;
+  --c-surface-alt: #f5efe5; /* sunken panels, inactive tiles       */
+  --c-surface-sunken: #ece3d5;
+  --c-surface-raised: #ffffff;
+
+  --c-primary: #1e5147; /* deep forest green   8.5:1 on white  */
+  --c-primary-strong: #163b34; /* pressed / hover                     */
+  --c-primary-soft: #e2ede8; /* tinted fill, dark text on top       */
+  --c-primary-tint: #f1f7f4;
+  --c-secondary: #b04a2c; /* warm clay           5.4:1 on white  */
+  --c-secondary-strong: #8d3920;
+  --c-secondary-soft: #fbe9e1;
+  --c-accent: #c0842a; /* muted gold — FILL ONLY (3.1:1)      */
+  --c-accent-strong: #9d6a1c;
+  --c-accent-soft: #faefda;
+  --c-sage: #6f8d7e; /* decorative / large glyphs only      */
+  --c-sage-soft: #edf3ef;
+
+  --c-text: #221f1b; /* 15.4:1 on paper                     */
+  --c-text-muted: #61584d; /*  6.4:1 on paper                     */
+  --c-text-faint: #8a7f72; /*  3.6:1 — decorative text only       */
+  --c-text-inverse: #fbf8f3;
+
+  --c-success: #23664a; /* 7.1:1 */
+  --c-success-soft: #e0efe6;
+  --c-warning: #8a5a00; /* 5.9:1 */
+  --c-warning-soft: #fbeed8;
+  --c-error: #a3302c; /* 7.2:1 */
+  --c-error-soft: #f9e5e2;
+
+  --c-border: #e7ddcf;
+  --c-border-strong: #cdbda6;
+  --c-focus: #0f5f9c; /* deliberately distinct from the brand */
+
+  --e-soft: 0 1px 2px rgb(64 48 32 / 0.05), 0 2px 8px rgb(64 48 32 / 0.05);
+  --e-lift: 0 2px 4px rgb(64 48 32 / 0.06), 0 10px 24px rgb(64 48 32 / 0.08);
+  --e-float: 0 4px 8px rgb(64 48 32 / 0.06), 0 18px 44px rgb(64 48 32 / 0.12);
+  --e-inset: inset 0 1px 0 rgb(255 255 255 / 0.7);
+
+  /* Decorative washes, referenced by the classes further down. */
+  --wash-a: rgb(30 81 71 / 0.09);
+  --wash-b: rgb(176 74 44 / 0.08);
+  --wash-c: rgb(192 132 42 / 0.1);
+  --grain-opacity: 0.35;
+  --scrim: rgb(34 31 27 / 0.45);
+}
+
+/* ============================================================
+   DARK THEME — warm charcoal with a green undertone.
+   Not an inversion: surfaces are layered, brand colours are
+   lightened so they can carry DARK text on a light fill, and
+   `--c-text-inverse` flips with them.
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-bg: #121614;
+    --c-bg-deep: #0c100e;
+    --c-surface: #1a201d;
+    --c-surface-alt: #222926;
+    --c-surface-sunken: #141a18;
+    --c-surface-raised: #242c29;
+
+    --c-primary: #74c2ad; /* 8.6:1 on --c-surface */
+    --c-primary-strong: #96d4c3;
+    --c-primary-soft: #1a332d;
+    --c-primary-tint: #16241f;
+    --c-secondary: #e79269; /* 8.1:1 on --c-surface */
+    --c-secondary-strong: #f2a982;
+    --c-secondary-soft: #33211a;
+    --c-accent: #ddaf5f;
+    --c-accent-strong: #ebc27a;
+    --c-accent-soft: #332918;
+    --c-sage: #86a596;
+    --c-sage-soft: #1b2421;
+
+    --c-text: #eee8dd; /* 14.1:1 on --c-surface */
+    --c-text-muted: #aba193; /*  6.8:1 on --c-surface */
+    --c-text-faint: #7f7669;
+    --c-text-inverse: #0e1412; /* dark text ON the light brand fills */
+
+    --c-success: #7ec79b;
+    --c-success-soft: #16301f;
+    --c-warning: #e0b054;
+    --c-warning-soft: #322713;
+    --c-error: #ee8a80;
+    --c-error-soft: #37211f;
+
+    --c-border: #2e3633;
+    --c-border-strong: #4a5450;
+    --c-focus: #6fb6ea;
+
+    --e-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+    --e-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 24px rgb(0 0 0 / 0.42);
+    --e-float: 0 4px 8px rgb(0 0 0 / 0.4), 0 18px 44px rgb(0 0 0 / 0.5);
+    --e-inset: inset 0 1px 0 rgb(255 255 255 / 0.05);
+
+    --wash-a: rgb(116 194 173 / 0.11);
+    --wash-b: rgb(231 146 105 / 0.09);
+    --wash-c: rgb(221 175 95 / 0.09);
+    --grain-opacity: 0.22;
+    --scrim: rgb(0 0 0 / 0.6);
+  }
+}
+
+/* The same values again, applied when the person has chosen dark
+   explicitly rather than inheriting it from the operating system. */
+:root[data-theme="dark"] {
+  --c-bg: #121614;
+  --c-bg-deep: #0c100e;
+  --c-surface: #1a201d;
+  --c-surface-alt: #222926;
+  --c-surface-sunken: #141a18;
+  --c-surface-raised: #242c29;
+
+  --c-primary: #74c2ad;
+  --c-primary-strong: #96d4c3;
+  --c-primary-soft: #1a332d;
+  --c-primary-tint: #16241f;
+  --c-secondary: #e79269;
+  --c-secondary-strong: #f2a982;
+  --c-secondary-soft: #33211a;
+  --c-accent: #ddaf5f;
+  --c-accent-strong: #ebc27a;
+  --c-accent-soft: #332918;
+  --c-sage: #86a596;
+  --c-sage-soft: #1b2421;
+
+  --c-text: #eee8dd;
+  --c-text-muted: #aba193;
+  --c-text-faint: #7f7669;
+  --c-text-inverse: #0e1412;
+
+  --c-success: #7ec79b;
+  --c-success-soft: #16301f;
+  --c-warning: #e0b054;
+  --c-warning-soft: #322713;
+  --c-error: #ee8a80;
+  --c-error-soft: #37211f;
+
+  --c-border: #2e3633;
+  --c-border-strong: #4a5450;
+  --c-focus: #6fb6ea;
+
+  --e-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+  --e-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 24px rgb(0 0 0 / 0.42);
+  --e-float: 0 4px 8px rgb(0 0 0 / 0.4), 0 18px 44px rgb(0 0 0 / 0.5);
+  --e-inset: inset 0 1px 0 rgb(255 255 255 / 0.05);
+
+  --wash-a: rgb(116 194 173 / 0.11);
+  --wash-b: rgb(231 146 105 / 0.09);
+  --wash-c: rgb(221 175 95 / 0.09);
+  --grain-opacity: 0.22;
+  --scrim: rgb(0 0 0 / 0.6);
+}
+
+/* An existing preference in the database. Pushes every border and
+   every muted text colour to the strongest end of the scale. */
+:root[data-contrast="high"] {
+  --c-text-muted: var(--c-text);
+  --c-text-faint: var(--c-text);
+  --c-border: var(--c-border-strong);
+}
+
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
 
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
+    transform: translateY(0.75rem);
   }
   to {
     opacity: 1;
@@ -80,17 +296,67 @@
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes pop {
   0% {
     opacity: 0;
-    transform: scale(0.94);
+    transform: scale(0.92);
   }
   60% {
-    transform: scale(1.02);
+    transform: scale(1.025);
   }
   100% {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.88;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -140% 0;
+  }
+  100% {
+    background-position: 140% 0;
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--draw-length, 200);
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -104,6 +370,14 @@
 
 :root {
   --text-scale: 1;
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 html[data-text-size="large"] {
@@ -114,43 +388,64 @@ html[data-text-size="xlarge"] {
   --text-scale: 1.25;
 }
 
-html {
-  font-size: calc(18px * var(--text-scale));
-  -webkit-text-size-adjust: 100%;
-}
+/* These are element defaults, so they belong in the `base` layer.
+   Left unlayered they would beat every Tailwind utility — cascade
+   layers lose to unlayered rules regardless of specificity — and
+   `a { color: inherit }` alone would quietly defeat every
+   `text-*` class on a link. */
+@layer base {
+  html {
+    font-size: calc(18px * var(--text-scale));
+    -webkit-text-size-adjust: 100%;
+  }
 
-body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-sans);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  min-height: 100dvh;
-}
+  body {
+    background-color: var(--c-bg);
+    color: var(--c-text);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    letter-spacing: -0.003em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+  }
 
-h1,
-h2,
-h3 {
-  font-family: var(--font-serif);
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    line-height: 1.16;
+    letter-spacing: -0.018em;
+    font-optical-sizing: auto;
+    text-wrap: balance;
+  }
 
-/* Visible, high-contrast focus for keyboard users on every control. */
-:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 3px;
-  border-radius: var(--radius-sm);
-}
+  /* Long body copy reads better with the orphan control on too. */
+  p {
+    text-wrap: pretty;
+  }
 
-/* Never remove focus styling; only tune it. */
-button,
-a,
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
+  /* Visible, high-contrast focus for keyboard users on every control. */
+  :focus-visible {
+    outline: 3px solid var(--c-focus);
+    outline-offset: 3px;
+    border-radius: var(--r-sm);
+  }
+
+  /* Controls inherit the page's type; colour is left to the utility
+     classes on each control. */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  ::selection {
+    background: var(--c-primary-soft);
+    color: var(--c-text);
+  }
 }
 
 /* Respect the OS-level motion preference. */
@@ -184,4 +479,151 @@ html[data-reduce-motion="true"] *::after {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* ============================================================
+   SURFACE & DECORATION LAYER
+   ------------------------------------------------------------
+   A handful of composable classes rather than a pile of one-off
+   gradients scattered through the components.
+   ============================================================ */
+
+/* The page background: a warm base with two very quiet washes of
+   brand colour bled in from the top corners. Fixed, so it does not
+   slide around while the content scrolls. */
+@utility app-canvas {
+  position: relative;
+  background-color: var(--c-bg);
+  background-image:
+    radial-gradient(
+      70rem 34rem at 12% -8%,
+      var(--wash-a) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      56rem 30rem at 96% 2%,
+      var(--wash-b) 0%,
+      transparent 58%
+    );
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* A softly lit panel — the hero and other "first thing you see"
+   surfaces. Gradient runs top-left to bottom-right so the card
+   has a light source rather than a flat fill. */
+@utility surface-glow {
+  background-image: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-primary-tint) 58%,
+    var(--c-surface) 100%
+  );
+}
+
+/* Raised content card. Border + soft shadow + an inner highlight
+   along the top edge, which is what separates a card that looks
+   designed from a card that looks like a div with a border. */
+@utility panel {
+  background-color: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--e-soft), var(--e-inset);
+}
+
+/* Interactive card: lifts on hover, settles on press. Motion is
+   held to 200ms and is removed entirely under reduced motion. */
+@utility panel-interactive {
+  transition:
+    transform 0.2s var(--m-soft),
+    box-shadow 0.2s var(--m-soft),
+    border-color 0.2s var(--m-soft),
+    background-color 0.2s var(--m-soft);
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--e-lift), var(--e-inset);
+      border-color: var(--c-border-strong);
+    }
+  }
+  &:active {
+    transform: translateY(0);
+    box-shadow: var(--e-soft);
+  }
+}
+
+/* Hairline separator that fades out at both ends. */
+@utility rule-fade {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--c-border-strong),
+    transparent
+  );
+}
+
+/* Loading placeholder. Shape comes from the element; the shimmer
+   comes from here. Paired with `aria-hidden` and a live region. */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--c-surface-alt);
+  border-radius: var(--r-md);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--c-surface) 70%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 220% 100%;
+    animation: var(--a-shimmer);
+  }
+}
+
+/* Numbers in tables, timers and scores should not jitter. */
+@utility numeric {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Stagger helper: children fade up one after another. Capped at
+   six so a long list never waits on an animation to become
+   readable. */
+@utility stagger {
+  & > * {
+    animation: var(--a-fade-up);
+  }
+  & > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  & > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
+  & > *:nth-child(3) {
+    animation-delay: 90ms;
+  }
+  & > *:nth-child(4) {
+    animation-delay: 135ms;
+  }
+  & > *:nth-child(5) {
+    animation-delay: 180ms;
+  }
+  & > *:nth-child(n + 6) {
+    animation-delay: 220ms;
+  }
+}
+
+/* Hides scrollbars on the horizontal pill navigations without
+   removing the ability to scroll them. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

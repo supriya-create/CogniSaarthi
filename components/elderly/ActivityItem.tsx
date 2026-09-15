@@ -34,7 +34,7 @@ export function ActivityItem({
     <>
       <span
         aria-hidden
-        className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-alt text-2xl"
+        className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-surface-alt text-2xl"
       >
         {definition?.glyph ?? "🧠"}
       </span>
@@ -50,10 +50,10 @@ export function ActivityItem({
 
       {completed && session.result ? (
         <span className="flex shrink-0 flex-col items-end">
-          <span className="text-2xl font-semibold tabular-nums">
+          <span className="numeric font-serif text-2xl leading-none font-semibold">
             {session.result.score}%
           </span>
-          <span className="flex items-center gap-1 text-sm font-medium text-success">
+          <span className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-success">
             <CircleCheck className="size-4" aria-hidden />
             {dict.historyCompleted}
           </span>
@@ -68,7 +68,7 @@ export function ActivityItem({
   );
 
   const shared =
-    "flex items-center gap-4 rounded-2xl border border-border p-4 shadow-soft";
+    "flex items-center gap-4 rounded-2xl border border-border p-4 shadow-soft sm:p-5";
 
   if (!completed) {
     return (
@@ -82,7 +82,7 @@ export function ActivityItem({
         href={`/results/${session.id}`}
         className={cn(
           shared,
-          "bg-surface transition-colors duration-150 hover:border-border-strong hover:bg-surface-alt",
+          "panel-interactive bg-surface",
         )}
       >
         {body}

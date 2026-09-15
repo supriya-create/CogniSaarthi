@@ -157,6 +157,32 @@ enum AlertStatus {
   DISMISSED
 }
 
+// -------------------- Phase 7: consent & audit --------------------
+
+/// What a person is being asked to agree to. One value today, because
+/// one purpose is all that is actually offered — a purpose the product
+/// does not serve must not appear on a consent form.
+///
+/// Deliberately NOT "medical research": Cognisaarthi runs no study and
+/// makes no clinical claim. The purpose is improving the product and
+/// understanding, in aggregate, how the activities are used.
+enum ConsentPurpose {
+  RESEARCH_IMPROVEMENT
+}
+
+/// Sensitive operations worth being able to answer questions about
+/// later. Deliberately a small, closed list: an audit log that records
+/// everything records nothing usefully.
+enum AuditAction {
+  RESEARCH_CONSENT_GRANTED
+  RESEARCH_CONSENT_WITHDRAWN
+  RESEARCH_EXPORT_GENERATED
+  CAREGIVER_SNAPSHOT_ISSUED
+  ACCOUNT_DATA_EXPORTED
+  ACCOUNT_DATA_DELETED
+  CAREGIVER_LINK_CHANGED
+}
+
 /// Optional soft category for a caregiver's free-text observation.
 /// Never converted into a medical conclusion.
 enum NoteCategory {
@@ -197,6 +223,9 @@ model User {
   notes             CaregiverNote[]
   alerts            Alert[]
   emergencyContacts EmergencyContact[]
+
+  // Phase 7
+  researchConsents ResearchConsent[]
 
   @@index([createdAt])
 }
@@ -509,6 +538,71 @@ model EmergencyContact {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// -------------------- Phase 7: consent & audit --------------------
+
+/// One person's decision about ONE VERSION of ONE purpose.
+///
+/// Versioned rather than a boolean on `User` because consent is only
+/// meaningful in relation to what was actually said at the time. If the
+/// explanation changes materially it becomes a new version, a new row,
+/// and an unanswered question — never an old "yes" silently carried
+/// forward onto new wording.
+///
+/// A withdrawn row is kept (`consented = false`, `withdrawnAt` set)
+/// rather than deleted, so "they used to consent and then withdrew" is
+/// distinguishable from "they were never asked".
+///
+/// Only the ELDER may create one of these. A caregiver link is a care
+/// relationship, not legal authority — see docs/privacy-and-consent.md.
+model ResearchConsent {
+  id      String         @id @default(cuid())
+  userId  String
+  /// e.g. "research-consent-v1" — matches a version in lib/privacy/consent.ts.
+  version String
+  purpose ConsentPurpose @default(RESEARCH_IMPROVEMENT)
+
+  /// The current answer for this version. False means either declined
+  /// or withdrawn; `withdrawnAt` tells the two apart.
+  consented   Boolean
+  consentedAt DateTime?
+  withdrawnAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, version])
+  @@index([userId])
+}
+
+/// A minimal record that a sensitive thing happened.
+///
+/// Note there are NO foreign keys here, which is deliberate: an audit
+/// entry that is cascade-deleted along with the account it describes
+/// cannot answer the one question an audit log exists to answer. Ids
+/// are stored as plain strings and may outlive their rows.
+///
+/// `detail` carries small structured context — counts, a consent
+/// version, a record total. It must never carry the CONTENT of anything
+/// (no memory text, no note bodies, no tokens, no credentials).
+model AuditEvent {
+  id     String      @id @default(cuid())
+  action AuditAction
+
+  /// The elder the event concerns, when there is one.
+  userId String?
+  /// The caregiver who acted, when a caregiver acted.
+  caregiverId String?
+  /// Free-form, deliberately small, non-sensitive context.
+  detail Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
 }
 
 /// Caregiver-side notification preferences. In-app is the only delivery

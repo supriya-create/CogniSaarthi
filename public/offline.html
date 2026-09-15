@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en-IN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <title>Cognisaarthi</title>
+    <!--
+      Last-resort fallback, shown only when a page has never been opened
+      on this device AND there is no connection. It is a static file, so
+      it cannot use the app's i18n dictionaries — rather than defaulting
+      to English only, it says the same calm thing in all three of the
+      languages Cognisaarthi supports.
+    -->
+    <style>
+      /* The palette mirrors app/globals.css. It is duplicated here
+         because this file is served by the service worker before any
+         application CSS exists. */
+      :root {
+        color-scheme: light dark;
+        --bg: #faf6ef;
+        --text: #221f1b;
+        --muted: #61584d;
+        --line: #e7ddcf;
+        --brand: #1e5147;
+        --on-brand: #fbf8f3;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121614;
+          --text: #eee8dd;
+          --muted: #aba193;
+          --line: #2e3633;
+          --brand: #74c2ad;
+          --on-brand: #0e1412;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        padding: 1.5rem;
+      }
+      .card {
+        max-width: 30rem;
+        text-align: center;
+      }
+      h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.75rem;
+        margin: 1.25rem 0 0.5rem;
+        font-weight: 600;
+      }
+      p { font-size: 1.125rem; line-height: 1.6; margin: 0.35rem 0; }
+      .muted { color: var(--muted); }
+      .lang + .lang { margin-top: 1.25rem; border-top: 1px solid var(--line); padding-top: 1.25rem; }
+      button {
+        margin-top: 1.75rem;
+        min-height: 3.5rem;
+        padding: 0 1.75rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--on-brand);
+        background: var(--brand);
+        border: 2px solid var(--brand);
+        border-radius: 1.25rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <img src="/icon.svg" alt="" width="88" height="88" />
+
+      <div class="lang">
+        <h1>You're offline</h1>
+        <p class="muted">Your activities are saved on this device.</p>
+      </div>
+
+      <div class="lang" lang="hi-IN">
+        <h1>आप ऑफ़लाइन हैं</h1>
+        <p class="muted">आपकी गतिविधियाँ इस डिवाइस पर सहेज ली गई हैं।</p>
+      </div>
+
+      <div class="lang" lang="as-IN">
+        <h1>আপুনি অফলাইন আছে</h1>
+        <p class="muted">আপোনাৰ কামবোৰ এই ডিভাইচত সাঁচি থোৱা হৈছে।</p>
+      </div>
+
+      <button type="button" onclick="location.reload()">
+        Try again · फिर से · আকৌ
+      </button>
+    </main>
+  </body>
+</html>

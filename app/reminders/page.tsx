@@ -6,7 +6,8 @@ import {
   type ReminderItemDTO,
 } from "@/components/elderly/ReminderList";
 import { requireUser } from "@/lib/auth/current-user";
-import { getDict } from "@/lib/i18n/dictionaries";
+import { getDict, localeTag } from "@/lib/i18n/dictionaries";
+import { formatDayLabel } from "@/lib/utils/date";
 import { syncReminderDay } from "@/lib/reminders/sync";
 
 export const dynamic = "force-dynamic";
@@ -31,12 +32,15 @@ export default async function RemindersPage() {
 
   return (
     <PageShell
-      header={<ElderlyHeader backHref="/home" backLabel={dict.back} />}
+      header={
+        <ElderlyHeader backHref="/home" backLabel={dict.back} dict={dict} />
+      }
       nav={<BottomNav dict={dict} />}
     >
       <ReminderList
         items={items}
         language={language}
+        dateLabel={formatDayLabel(new Date(), localeTag(language))}
         voicePrefs={{
           voiceEnabled: user.preference?.voiceEnabled ?? false,
           reminderVoice: user.preference?.reminderVoice ?? true,

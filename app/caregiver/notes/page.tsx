@@ -1,5 +1,4 @@
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
-import { CaregiverNav } from "@/components/caregiver/CaregiverNav";
 import { NotesManager, type NoteDTO } from "@/components/caregiver/NotesManager";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { requireCaregiver } from "@/lib/auth/current-user";
@@ -17,7 +16,7 @@ export default async function CaregiverNotesPage() {
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+      <CaregiverShell action={<SignOutButton />} nav>
         <EmptyState
           title="No one is connected to your account yet."
           body="Connect to a family member first, then you can keep notes about them."
@@ -39,7 +38,7 @@ export default async function CaregiverNotesPage() {
   }));
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+    <CaregiverShell action={<SignOutButton />} nav>
       <NotesManager notes={dtos} userName={user.name} />
     </CaregiverShell>
   );

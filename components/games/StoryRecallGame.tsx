@@ -122,7 +122,7 @@ export function StoryRecallGame({
           ) : null}
         </div>
 
-        <p className="mt-5 rounded-2xl border border-border bg-surface p-6 text-2xl leading-relaxed shadow-soft">
+        <p className="mt-5 panel p-6 text-2xl leading-relaxed shadow-soft">
           {story.text[language]}
         </p>
 

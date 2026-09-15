@@ -24,6 +24,7 @@ export default async function GamePage({
   return (
     <GameRunner
       gameId={gameId}
+      userId={user.id}
       language={user.preference?.language ?? user.language}
       initialDifficulty={initialDifficulty}
       voiceEnabled={user.preference?.voiceEnabled ?? false}

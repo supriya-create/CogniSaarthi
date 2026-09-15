@@ -1,11 +1,14 @@
-import { Check } from "lucide-react";
+import { CalendarHeart, Check } from "lucide-react";
 
 import { ElderlyHeader } from "@/components/layout/ElderlyHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageShell } from "@/components/layout/PageShell";
 import { LinkButton } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { requireUser } from "@/lib/auth/current-user";
-import { getDict } from "@/lib/i18n/dictionaries";
+import { getDict, localeTag } from "@/lib/i18n/dictionaries";
+import { formatDayLabel } from "@/lib/utils/date";
 import { syncReminderDay } from "@/lib/reminders/sync";
 import {
   REMINDER_CATEGORY_EMOJI,
@@ -29,22 +32,32 @@ export default async function RoutinePage() {
   const timeZone = user.preference?.timeZone ?? "Asia/Kolkata";
 
   const items = await syncReminderDay(user.id, timeZone);
+  const dateLabel = formatDayLabel(new Date(), localeTag(language));
 
   return (
     <PageShell
-      header={<ElderlyHeader backHref="/home" backLabel={dict.back} />}
+      header={
+        <ElderlyHeader backHref="/home" backLabel={dict.back} dict={dict} />
+      }
       nav={<BottomNav dict={dict} />}
     >
-      <h1 className="font-serif text-3xl leading-tight font-semibold">
-        {dict.routineTitle} 🌼
-      </h1>
+      <SectionHeading
+        as="h1"
+        size="lg"
+        eyebrow={dateLabel}
+        title={dict.routineTitle}
+      />
 
       {items.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-12 text-center text-xl text-text-muted">
-          {dict.routineEmpty}
-        </p>
+        <div className="mt-8">
+          <EmptyState
+            title={dict.remindersNoneToday}
+            body={dict.routineEmpty}
+            icon={<CalendarHeart className="size-10" aria-hidden />}
+          />
+        </div>
       ) : (
-        <ol className="mt-6 flex flex-col">
+        <ol className="mt-8 flex flex-col">
           {items.map((item, index) => {
             const done = item.state === "done";
             const isLast = index === items.length - 1;
@@ -56,9 +69,9 @@ export default async function RoutinePage() {
                 <div className="flex flex-col items-center">
                   <span
                     className={cn(
-                      "flex size-12 shrink-0 items-center justify-center rounded-full border-2 text-2xl",
+                      "flex size-14 shrink-0 items-center justify-center rounded-2xl border-2 text-2xl shadow-soft",
                       done
-                        ? "border-success bg-success-soft"
+                        ? "border-success/40 bg-success-soft"
                         : "border-border bg-surface",
                     )}
                     aria-hidden
@@ -70,26 +83,41 @@ export default async function RoutinePage() {
                     )}
                   </span>
                   {!isLast ? (
-                    <span className="w-0.5 flex-1 bg-border" aria-hidden />
+                    <span
+                      className={cn(
+                        "my-1 w-0.5 flex-1 rounded-full",
+                        done ? "bg-success/40" : "bg-border",
+                      )}
+                      aria-hidden
+                    />
                   ) : null}
                 </div>
 
-                <div className={cn("flex-1 pb-6", isLast && "pb-0")}>
-                  <p className="text-lg font-semibold text-text-muted">
-                    {formatTimeMinutes(item.timeMinutes)}
-                  </p>
-                  <p
+                <div className={cn("min-w-0 flex-1 pb-4", isLast && "pb-0")}>
+                  <div
                     className={cn(
-                      "text-xl font-semibold",
-                      done && "text-text-muted line-through",
+                      "rounded-2xl border px-5 py-4",
+                      done
+                        ? "border-success/25 bg-success-soft/40"
+                        : "border-border bg-surface shadow-soft",
                     )}
                   >
-                    {item.title}
-                  </p>
-                  <p className="text-base text-text-muted">
-                    {reminderCategoryLabel(dict, item.category)}
-                    {done ? ` · ${dict.done}` : ""}
-                  </p>
+                    <p className="numeric text-base font-bold text-text-muted">
+                      {formatTimeMinutes(item.timeMinutes)}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-0.5 font-serif text-xl leading-tight font-semibold",
+                        done && "text-text-muted line-through",
+                      )}
+                    >
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-base text-text-muted">
+                      {reminderCategoryLabel(dict, item.category)}
+                      {done ? ` · ${dict.done}` : ""}
+                    </p>
+                  </div>
                 </div>
               </li>
             );

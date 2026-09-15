@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils/cn";
 export type TileState = "idle" | "selected" | "correct" | "wrong" | "muted";
 
 const STATES: Record<TileState, string> = {
-  idle: "border-border bg-surface hover:border-border-strong hover:bg-surface-alt",
-  selected: "border-primary bg-primary-soft",
-  correct: "border-success bg-success-soft",
+  idle: "border-border bg-surface shadow-soft hover:border-border-strong hover:bg-surface-alt hover:shadow-lift",
+  selected: "border-primary bg-primary-soft shadow-lift",
+  correct: "border-success bg-success-soft shadow-lift",
   wrong: "border-error bg-error-soft",
-  muted: "border-border bg-surface-alt opacity-60",
+  muted: "border-border bg-surface-alt opacity-60 shadow-none",
 };
 
 /**
@@ -48,7 +48,7 @@ export function ObjectTile({
         <span
           aria-hidden
           className={cn(
-            "absolute top-2 right-2 flex size-7 items-center justify-center rounded-full text-text-inverse",
+            "animate-pop absolute top-2 right-2 flex size-7 items-center justify-center rounded-full text-text-inverse shadow-soft",
             state === "correct" ? "bg-success" : "bg-error",
           )}
         >
@@ -88,7 +88,7 @@ export function ObjectTile({
 
   const className = cn(
     "relative flex min-w-0 flex-col items-center justify-center rounded-2xl border-2 p-2 sm:p-3",
-    "transition-[background-color,border-color,transform] duration-150 ease-gentle",
+    "transition-[background-color,border-color,transform,box-shadow] duration-200 ease-out-soft",
     // Labelled tiles need vertical room for the word; unlabelled
     // ones are pure targets and stay square, which keeps a dense
     // grid entirely on screen instead of running off the bottom.
@@ -98,7 +98,7 @@ export function ObjectTile({
         : "min-h-[clamp(4.5rem,20vw,7.5rem)]"
       : "aspect-square",
     STATES[state],
-    interactive && "cursor-pointer active:scale-[0.98]",
+    interactive && "cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
     disabled && !interactive && "pointer-events-none",
   );
 

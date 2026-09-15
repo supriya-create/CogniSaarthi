@@ -43,9 +43,15 @@ must:
 | `SHORT_TERM_MEMORY` | Remember the Objects | Immediate/short-term recall |
 | `ATTENTION` | Find the Different One | Selective attention, visual search |
 | `WORKING_MEMORY` | Remember the Sequence | Working memory, sequencing |
-| `LANGUAGE` *(future)* | — | Naming, fluency |
-| `PROCESSING_SPEED` *(future)* | — | Speed of processing |
-| `EXECUTIVE_FUNCTION` *(future)* | — | Planning, set-shifting |
+| `LANGUAGE` | Story Time (Story Recall) | Narrative recall, comprehension |
+| `PROCESSING_SPEED` *(no activity)* | — | Speed of processing |
+| `EXECUTIVE_FUNCTION` *(no activity)* | — | Planning, set-shifting |
+
+The last two exist in the `CognitiveDomain` enum but have **no activity
+behind them**. The Phase 6 intelligence layer derives its domain list from the
+game definitions (`lib/intelligence/domains.ts`) precisely so it cannot
+manufacture a profile, a trend or a recommendation for a domain nobody has
+ever played.
 
 ## Preprocessing approach (when the time comes)
 
@@ -59,6 +65,23 @@ must:
 
 ## Status
 
-Nothing here is wired into the application. Phase 2 personalisation is
-rule-based and uses only the app's own interaction data. This document is the
-groundwork for a later, clearly-scoped research phase.
+**No dataset is currently integrated — adapter interface only.**
+
+Phase 6 added the abstraction, and nothing more:
+
+| File | What it is |
+|---|---|
+| `types.ts` | The shape a de-identified study record and adapter would take |
+| `adapters.ts` | An adapter registry. **Empty** — no adapter is registered |
+| `normalization.ts` | Rescales study columns to the same 0–100 scale as `metrics.ts`, for comparison only |
+| `validation.ts` | Zod parsing that also rejects direct identifiers outright |
+
+`datasetIntegrationStatus()` in `adapters.ts` is the single source of truth for
+what may be claimed publicly; it returns `NO_DATASET_INTEGRATED` today, and a
+test asserts it. The registry is deliberately empty rather than stubbed with a
+plausible-looking loader — invented rows would make the product appear
+research-backed while being nothing of the sort.
+
+The personalisation that actually ships (Phase 2 adaptive difficulty and the
+Phase 6 longitudinal layer) is rule-based and uses **only the app's own
+interaction data**. No model is trained on anything, here or elsewhere.

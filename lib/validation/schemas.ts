@@ -86,7 +86,7 @@ export const startSessionSchema = z.object({
   clientSessionId: z.string().min(8).max(64).optional(),
 });
 
-const roundSchema = z.object({
+export const roundSchema = z.object({
   index: z.number().int().min(0).max(50),
   correct: z.number().int().min(0).max(100),
   total: z.number().int().min(1).max(100),
@@ -184,6 +184,73 @@ export const caregiverPrefsSchema = z.object({
 export const alertActionSchema = z.object({
   action: z.enum(["read", "resolve", "dismiss"]),
 });
+
+// ------------------------- Phase 5: offline sync -------------------------
+
+/**
+ * Payloads pushed up by the offline queue. Everything is re-validated
+ * here: the client's identity, ownership, scores and timestamps are all
+ * re-derived or re-checked server-side, never trusted as sent.
+ */
+
+const isoDateString = z
+  .string()
+  .min(1)
+  .max(40)
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), "Invalid timestamp.");
+
+export const gameSessionSyncPayloadSchema = z.object({
+  /** Client-generated idempotency key — the server de-duplicates on it. */
+  clientSessionId: z.string().min(8).max(64),
+  gameId: z.string().min(1).max(64),
+  difficulty: difficultySchema,
+  language: languageSchema,
+  startedAt: isoDateString,
+  completedAt: isoDateString,
+  durationMs: z.number().int().min(0).max(1000 * 60 * 60),
+  rounds: z.array(roundSchema).min(1).max(50),
+});
+
+export const reminderAckSyncPayloadSchema = z.object({
+  reminderId: z.string().min(1).max(64),
+  scheduledFor: isoDateString,
+  action: z.enum(["DONE", "SKIP", "LATER"]),
+  /** When the person actually answered, for deterministic conflicts. */
+  eventAt: isoDateString,
+});
+
+export const syncOperationSchema = z.object({
+  id: z.string().min(1).max(64),
+  entityType: z.enum(["GAME_SESSION", "REMINDER_LOG"]),
+  entityId: z.string().min(1).max(200),
+  operation: z.enum(["CREATE", "UPDATE", "ACKNOWLEDGE", "DELETE"]),
+  payload: z.unknown(),
+});
+
+export const syncPushSchema = z.object({
+  operations: z.array(syncOperationSchema).min(1).max(100),
+});
+
+/**
+ * Phase 7 — research consent.
+ *
+ * Note the absence of a `userId`: identity comes from the elder's own
+ * session cookie. A body cannot nominate whose consent is being
+ * changed, which is what makes "a caregiver cannot consent for an
+ * elder" a property of the type rather than a rule someone has to
+ * remember to check.
+ *
+ * `.strict()` so an extra field is a 400 rather than something ignored.
+ */
+export const researchConsentSchema = z
+  .object({
+    action: z.enum(["GRANT", "DECLINE", "WITHDRAW"]),
+  })
+  .strict();
+
+export type ResearchConsentInput = z.infer<typeof researchConsentSchema>;
+
+export type SyncOperationInput = z.infer<typeof syncOperationSchema>;
 
 export type ReminderInput = z.infer<typeof reminderInputSchema>;
 export type NoteInput = z.infer<typeof noteInputSchema>;

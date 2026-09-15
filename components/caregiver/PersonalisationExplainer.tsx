@@ -16,7 +16,7 @@ export function PersonalisationExplainer() {
   ];
 
   return (
-    <section className="mt-9 rounded-2xl border border-border bg-surface-alt/60 p-6">
+    <section className="panel mt-10 bg-surface-alt/60 p-6">
       <h2 className="flex items-center gap-2 font-serif text-xl font-semibold">
         <Info className="size-5 shrink-0 text-secondary" aria-hidden />
         How Cognisaarthi personalises activities

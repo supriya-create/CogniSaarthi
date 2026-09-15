@@ -52,14 +52,14 @@ export function GameTimer({
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-lg font-semibold">{label}</span>
         <span
-          className="text-lg font-semibold tabular-nums text-text-muted"
+          className="numeric text-lg font-semibold text-text-muted"
           aria-live="off"
         >
           {secondsLeft} {secondsLabel}
         </span>
       </div>
       <div
-        className="mt-2 h-3 w-full overflow-hidden rounded-full bg-surface-sunken"
+        className="mt-2 h-3.5 w-full overflow-hidden rounded-full border border-border bg-surface-sunken"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={seconds}
@@ -67,7 +67,12 @@ export function GameTimer({
         aria-label={label}
       >
         <div
-          className="h-full rounded-full bg-primary transition-[width] duration-100 ease-linear"
+          className={
+            // The colour shift is a second, redundant cue; the number
+            // of seconds beside it is the one that actually informs.
+            "h-full rounded-full transition-[width,background-color] duration-100 ease-linear " +
+            (percent <= 25 ? "bg-accent" : "bg-primary")
+          }
           style={{ width: `${percent}%` }}
         />
       </div>

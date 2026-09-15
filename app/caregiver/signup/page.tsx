@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LogoMark } from "@/components/ui/Logo";
+import { AuthShell } from "@/components/caregiver/AuthShell";
 import { getCurrentCaregiver } from "@/lib/auth/current-user";
 import { SignupForm } from "./SignupForm";
 
@@ -9,23 +10,19 @@ export default async function CaregiverSignupPage() {
   if (caregiver) redirect("/caregiver");
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-bg px-5 py-10">
-      <main id="main" className="w-full max-w-md">
-        <div className="text-center">
-          <LogoMark className="mx-auto size-16" />
-          <h1 className="mt-6 font-serif text-3xl font-semibold">
-            Create a caregiver account
-          </h1>
-          <p className="mt-2 text-lg text-text-muted">
-            You will need the connection code from your family member&apos;s
-            profile.
-          </p>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-border bg-surface p-6 shadow-soft">
-          <SignupForm />
-        </div>
-      </main>
-    </div>
+    <AuthShell
+      title="Create a caregiver account"
+      subtitle="You will need the connection code from your family member's profile."
+      footer={
+        <Link
+          href="/caregiver/login"
+          className="rounded-lg px-2 py-1 font-semibold underline underline-offset-4 transition-colors hover:text-text"
+        >
+          I already have an account
+        </Link>
+      }
+    >
+      <SignupForm />
+    </AuthShell>
   );
 }

@@ -2,13 +2,24 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Check, Clock, Mic, Volume2, X } from "lucide-react";
+import { BellOff, Check, Clock, Volume2, X } from "lucide-react";
 import type { Language, ReminderCategory, SpeechRate } from "@prisma/client";
 
+import { Badge } from "@/components/ui/Badge";
 import { Button, LinkButton } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { VoiceOrb } from "@/components/elderly/VoiceOrb";
 import { getDict } from "@/lib/i18n/dictionaries";
 import { useVoice } from "@/lib/voice/useVoice";
 import { parseCommand } from "@/lib/voice/commands";
+import { acknowledgeReminderLocally } from "@/lib/offline/actions";
+import { occurrenceKey } from "@/lib/offline/serialization";
+import {
+  reminderOverrides,
+  useConnection,
+  useReminderOverrides,
+} from "@/lib/offline/useOffline";
+import { classifyOccurrence } from "@/lib/reminders/status";
 import {
   REMINDER_CATEGORY_EMOJI,
   reminderCategoryLabel,
@@ -51,10 +62,13 @@ const ACTIONABLE: OccurrenceState[] = ["due", "missed", "snoozed"];
 export function ReminderList({
   items,
   language,
+  dateLabel,
   voicePrefs,
 }: {
   items: ReminderItemDTO[];
   language: Language;
+  /** "Tuesday, 15 September", formatted on the server. */
+  dateLabel: string;
   voicePrefs: {
     voiceEnabled: boolean;
     reminderVoice: boolean;
@@ -65,14 +79,40 @@ export function ReminderList({
   const router = useRouter();
   const dict = getDict(language);
   const voice = useVoice({ language, rate: voicePrefs.speechRate });
+  const connection = useConnection();
+  const overrides = useReminderOverrides();
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [caption, setCaption] = useState<string | null>(null);
   const autoReadDone = useRef(false);
 
-  const actionable = items.filter((i) => ACTIONABLE.includes(i.state));
-  const upcoming = items.filter((i) => i.state === "upcoming");
-  const answered = items.filter((i) =>
+  /**
+   * The server rendered this list when the page was last fetched — which,
+   * offline, may have been a while ago. An answer given on this device
+   * since then is layered on top, so what the person sees always matches
+   * what they last did.
+   */
+  const resolved = items.map((item) => {
+    const override = overrides[occurrenceKey(item.reminderId, item.scheduledFor)];
+    if (!override) return item;
+    return {
+      ...item,
+      state: classifyOccurrence(
+        {
+          scheduledFor: new Date(item.scheduledFor),
+          status: override.status,
+          snoozedUntil: override.snoozedUntil
+            ? new Date(override.snoozedUntil)
+            : null,
+        },
+        new Date(),
+      ),
+    };
+  });
+
+  const actionable = resolved.filter((i) => ACTIONABLE.includes(i.state));
+  const upcoming = resolved.filter((i) => i.state === "upcoming");
+  const answered = resolved.filter((i) =>
     ["done", "skipped"].includes(i.state),
   );
 
@@ -104,37 +144,41 @@ export function ReminderList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voice.supported.output]);
 
+  /**
+   * Answering a reminder writes to THIS DEVICE first and confirms
+   * immediately. Reaching the server is queued and retried in the
+   * background, so the person gets the same instant response whether
+   * or not there is a signal — and never sees a failure for something
+   * that was, in fact, safely recorded.
+   */
   async function act(item: ReminderItemDTO, action: Action) {
-    const key = `${item.reminderId}|${item.scheduledFor}`;
+    const key = occurrenceKey(item.reminderId, item.scheduledFor);
     setBusy(key);
-    try {
-      const response = await fetch("/api/reminders/ack", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reminderId: item.reminderId,
-          scheduledFor: item.scheduledFor,
-          action,
-        }),
-      });
-      if (!response.ok) throw new Error("ack failed");
-      const message =
-        action === "DONE"
-          ? dict.reminderMarkedDone
-          : action === "LATER"
-            ? dict.reminderMarkedLater
-            : dict.reminderMarkedSkip;
-      setToast(message);
-      if (voicePrefs.voiceEnabled && voicePrefs.reminderVoice) {
-        voice.speak(message);
-      }
-      router.refresh();
-    } catch {
-      setToast(dict.errorBody);
-    } finally {
-      setBusy(null);
-      setTimeout(() => setToast(null), 2500);
+
+    await acknowledgeReminderLocally({
+      reminderId: item.reminderId,
+      scheduledFor: item.scheduledFor,
+      action,
+    });
+    await reminderOverrides.refresh();
+
+    const message =
+      action === "DONE"
+        ? dict.reminderMarkedDone
+        : action === "LATER"
+          ? dict.reminderMarkedLater
+          : dict.reminderMarkedSkip;
+    setToast(message);
+    if (voicePrefs.voiceEnabled && voicePrefs.reminderVoice) {
+      voice.speak(message);
     }
+
+    // Re-fetch the server's view only when there is a connection to
+    // re-fetch it with; offline, the local override already has it.
+    if (connection !== "OFFLINE") router.refresh();
+
+    setBusy(null);
+    setTimeout(() => setToast(null), 2500);
   }
 
   function handleVoice() {
@@ -164,10 +208,15 @@ export function ReminderList({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-3xl leading-tight font-semibold">
-          {dict.remindersTodayTitle} 🌼
-        </h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-base font-semibold tracking-[0.1em] text-text-muted uppercase">
+            {dateLabel}
+          </p>
+          <h1 className="mt-1.5 font-serif text-3xl leading-tight font-semibold sm:text-4xl">
+            {dict.remindersTodayTitle}
+          </h1>
+        </div>
         {voice.supported.output ? (
           <Button
             size="md"
@@ -184,82 +233,106 @@ export function ReminderList({
         <p
           role="status"
           aria-live="polite"
-          className="mt-4 flex items-center gap-2 rounded-xl border border-success/30 bg-success-soft px-4 py-3 text-lg font-medium text-success"
+          className="animate-fade-up mt-5 flex items-center gap-2.5 rounded-2xl border border-success/30 bg-success-soft px-5 py-3.5 text-lg font-semibold text-success shadow-soft"
         >
-          <Check className="size-5 shrink-0" aria-hidden />
+          <Check className="size-6 shrink-0" aria-hidden />
           {toast}
         </p>
       ) : null}
 
       {items.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-12 text-center text-xl text-text-muted">
-          {dict.remindersNoneToday}
-        </p>
+        <div className="mt-8">
+          <EmptyState
+            title={dict.remindersNoneToday}
+            body={dict.routineEmpty}
+            icon={<BellOff className="size-10" aria-hidden />}
+          />
+        </div>
       ) : null}
 
       {actionable.length > 0 ? (
-        <ul className="mt-6 flex flex-col gap-4">
-          {actionable.map((item) => (
-            <ReminderCard
+        <ol className="mt-7 flex flex-col">
+          {actionable.map((item, index) => (
+            <TimelineRow
               key={`${item.reminderId}|${item.scheduledFor}`}
-              item={item}
-              dict={dict}
-              language={language}
-              busy={busy === `${item.reminderId}|${item.scheduledFor}`}
-              onAct={act}
-            />
+              time={formatTimeMinutes(item.timeMinutes)}
+              tone={item.state === "missed" ? "warning" : "due"}
+              last={index === actionable.length - 1}
+            >
+              <ReminderCard
+                item={item}
+                dict={dict}
+                language={language}
+                busy={busy === `${item.reminderId}|${item.scheduledFor}`}
+                onAct={act}
+              />
+            </TimelineRow>
           ))}
-        </ul>
+        </ol>
       ) : null}
 
       {upcoming.length > 0 ? (
-        <section className="mt-8">
+        <section className="mt-9">
           <h2 className="font-serif text-xl font-semibold text-text-muted">
             {dict.reminderUpcomingLabel}
           </h2>
-          <ul className="mt-3 flex flex-col gap-3">
-            {upcoming.map((item) => (
-              <li
+          <ol className="mt-4 flex flex-col">
+            {upcoming.map((item, index) => (
+              <TimelineRow
                 key={`${item.reminderId}|${item.scheduledFor}`}
-                className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4"
+                time={formatTimeMinutes(item.timeMinutes)}
+                tone="upcoming"
+                last={index === upcoming.length - 1}
               >
-                <span className="text-3xl" aria-hidden>
-                  {REMINDER_CATEGORY_EMOJI[item.category]}
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-lg font-semibold">{item.title}</span>
-                  <span className="text-base text-text-muted">
-                    {reminderCategoryLabel(dict, item.category)}
+                <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-soft">
+                  <span className="text-3xl leading-none" aria-hidden>
+                    {REMINDER_CATEGORY_EMOJI[item.category]}
                   </span>
-                </span>
-                <span className="flex items-center gap-1.5 text-lg font-semibold text-text-muted">
-                  <Clock className="size-5" aria-hidden />
-                  {formatTimeMinutes(item.timeMinutes)}
-                </span>
-              </li>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-lg leading-tight font-semibold">
+                      {item.title}
+                    </span>
+                    <span className="text-base text-text-muted">
+                      {reminderCategoryLabel(dict, item.category)}
+                    </span>
+                  </span>
+                </div>
+              </TimelineRow>
             ))}
-          </ul>
+          </ol>
         </section>
       ) : null}
 
       {answered.length > 0 ? (
-        <section className="mt-8">
+        <section className="mt-9">
           <h2 className="font-serif text-xl font-semibold text-text-muted">
             {dict.done}
           </h2>
-          <ul className="mt-3 flex flex-col gap-2">
+          <ul className="mt-4 flex flex-col gap-2">
             {answered.map((item) => (
               <li
                 key={`${item.reminderId}|${item.scheduledFor}`}
-                className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-text-muted"
+                className="flex items-center gap-3 rounded-2xl border border-border bg-surface-alt/60 px-4 py-3 text-text-muted"
               >
-                <span aria-hidden>{REMINDER_CATEGORY_EMOJI[item.category]}</span>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex size-8 shrink-0 items-center justify-center rounded-full",
+                    item.state === "done"
+                      ? "bg-success-soft text-success"
+                      : "bg-surface-sunken text-text-muted",
+                  )}
+                >
+                  {item.state === "done" ? (
+                    <Check className="size-5" strokeWidth={3} />
+                  ) : (
+                    <X className="size-5" strokeWidth={3} />
+                  )}
+                </span>
+                <span className="numeric text-base font-semibold">
+                  {formatTimeMinutes(item.timeMinutes)}
+                </span>
                 <span className="flex-1 text-lg line-through">{item.title}</span>
-                {item.state === "done" ? (
-                  <Check className="size-5 text-success" aria-hidden />
-                ) : (
-                  <X className="size-5" aria-hidden />
-                )}
               </li>
             ))}
           </ul>
@@ -268,32 +341,68 @@ export function ReminderList({
 
       {/* Voice assist — never the only way; every action above is a button. */}
       {voicePrefs.voiceEnabled && voice.supported.input ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex flex-col items-center gap-2 px-4">
-          {caption ? (
-            <p
-              role="status"
-              aria-live="polite"
-              className="pointer-events-auto max-w-xs rounded-full border border-border bg-surface px-4 py-2 text-center text-base font-medium shadow-lift"
-            >
-              {caption}
-            </p>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleVoice}
-            aria-label={dict.voiceTapToSpeak}
-            className={cn(
-              "pointer-events-auto flex size-16 items-center justify-center rounded-full border-2 shadow-lift transition-colors",
-              voice.listening
-                ? "animate-pulse border-primary bg-primary text-text-inverse"
-                : "border-primary bg-surface text-primary hover:bg-primary-soft",
-            )}
-          >
-            <Mic className="size-8" aria-hidden />
-          </button>
-        </div>
+        <VoiceOrb
+          listening={voice.listening}
+          speaking={voice.speaking}
+          caption={caption}
+          listenLabel={dict.voiceTapToSpeak}
+          stopLabel={dict.quitActivity}
+          onActivate={handleVoice}
+          onStop={() => {
+            voice.stopSpeaking();
+            setCaption(null);
+          }}
+        />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * One row of the day's timeline: the time on the left, a connecting
+ * line and a status dot down the middle, the reminder itself on the
+ * right. The dot's shape differs per state as well as its colour, and
+ * the state is always written out inside the card.
+ */
+function TimelineRow({
+  time,
+  tone,
+  last,
+  children,
+}: {
+  time: string;
+  tone: "due" | "warning" | "upcoming";
+  last: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="relative flex gap-3 pb-4 last:pb-0 sm:gap-4">
+      <div className="flex w-16 shrink-0 flex-col items-end pt-4 sm:w-20">
+        <span className="numeric text-lg font-bold">{time}</span>
+      </div>
+
+      <div className="relative flex w-6 shrink-0 justify-center">
+        {!last ? (
+          <span
+            aria-hidden
+            className="absolute top-8 bottom-0 w-0.5 rounded-full bg-border"
+          />
+        ) : null}
+        <span
+          aria-hidden
+          className={cn(
+            "relative z-10 mt-5 size-4 rounded-full border-2 bg-surface",
+            tone === "due"
+              ? "border-primary bg-primary"
+              : tone === "warning"
+                ? "border-warning bg-warning-soft"
+                : "border-border-strong",
+          )}
+        />
+      </div>
+
+      <div className="min-w-0 flex-1">{children}</div>
+    </li>
   );
 }
 
@@ -310,40 +419,64 @@ function ReminderCard({
   onAct: (item: ReminderItemDTO, action: Action) => void;
 }) {
   const missed = item.state === "missed";
+
   return (
-    <li
+    <div
       className={cn(
         "rounded-2xl border-2 p-5 shadow-soft",
-        missed ? "border-warning/40 bg-warning-soft" : "border-border bg-surface",
+        missed
+          ? "border-warning/40 bg-warning-soft"
+          : "border-border-strong bg-surface",
       )}
     >
       <div className="flex items-start gap-4">
-        <span className="text-4xl leading-none" aria-hidden>
+        <span
+          aria-hidden
+          className={cn(
+            "flex size-14 shrink-0 items-center justify-center rounded-2xl border text-3xl",
+            missed
+              ? "border-warning/30 bg-surface/70"
+              : "border-border bg-surface-alt",
+          )}
+        >
           {REMINDER_CATEGORY_EMOJI[item.category]}
         </span>
+
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="flex items-center gap-2 text-lg font-semibold text-text-muted">
-            <Clock className="size-5" aria-hidden />
-            {formatTimeMinutes(item.timeMinutes)}
+          <span className="font-serif text-2xl leading-tight font-semibold">
+            {item.title}
           </span>
-          <span className="mt-0.5 text-2xl font-semibold">{item.title}</span>
-          <span className="text-lg text-text-muted">
-            {reminderCategoryLabel(dict, item.category)}
+          <span className="mt-1 flex flex-wrap items-center gap-2">
+            <Badge tone="neutral" size="sm">
+              {reminderCategoryLabel(dict, item.category)}
+            </Badge>
+            {!missed ? (
+              <Badge
+                tone="primary"
+                size="sm"
+                icon={<Clock className="size-4 shrink-0" aria-hidden />}
+              >
+                {dict.reminderItsTime}
+              </Badge>
+            ) : null}
           </span>
-          {item.description ? (
-            <span className="mt-1 text-base text-text-muted">
-              {item.description}
+          {/* The nudge is a sentence, so it gets a line of its own —
+              squeezed into a pill it would run off a narrow screen. */}
+          {missed ? (
+            <span className="mt-2 flex items-start gap-2 text-base leading-snug font-medium text-warning">
+              <Clock className="mt-0.5 size-4 shrink-0" aria-hidden />
+              {dict.reminderMissedNudge}
             </span>
           ) : null}
-          {missed ? (
-            <span className="mt-2 text-base font-medium text-warning">
-              {dict.reminderMissedNudge}
+          {item.description ? (
+            <span className="mt-2 text-base leading-snug text-text-muted">
+              {item.description}
             </span>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {item.category === "COGNITIVE_ACTIVITY" ? (
           <LinkButton href="/home" size="md" variant="secondary">
             {dict.reminderStartAction}
@@ -375,8 +508,9 @@ function ReminderCard({
           {dict.reminderSkipAction}
         </Button>
       </div>
+
       {item.category === "COGNITIVE_ACTIVITY" ? (
-        <div className="mt-2 flex gap-3">
+        <div className="mt-3 flex flex-wrap gap-3">
           <Button
             size="sm"
             variant="quiet"
@@ -395,6 +529,6 @@ function ReminderCard({
           </Button>
         </div>
       ) : null}
-    </li>
+    </div>
   );
 }

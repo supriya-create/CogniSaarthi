@@ -2,16 +2,29 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Check, LogOut } from "lucide-react";
+import {
+  BellRing,
+  Check,
+  LogOut,
+  Languages,
+  MonitorCog,
+  Type,
+  UserRound,
+  Volume2,
+} from "lucide-react";
 import type { FontScale, Language, SpeechRate } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { SettingsGroup, SettingsRow } from "@/components/ui/Settings";
+import { Switch } from "@/components/ui/Switch";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Avatar } from "@/components/elderly/Avatar";
 import { LanguageSelector } from "@/components/elderly/LanguageSelector";
 import { TextSizeSelector } from "@/components/elderly/TextSizeSelector";
 import { AVATARS } from "@/lib/avatars";
 import { getDict } from "@/lib/i18n/dictionaries";
+import { wipeLocalDataOnSignOut } from "@/lib/offline/actions";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -98,232 +111,256 @@ export function ProfileForm({ initial }: Props) {
   }
 
   async function signOut() {
+    // Clear this device's local copy and cached pages BEFORE dropping
+    // the session: on a shared family tablet, the next person must not
+    // be able to see the last person's activities.
+    await wipeLocalDataOnSignOut();
     await fetch("/api/session?role=ELDER", { method: "DELETE" });
     router.replace("/onboarding");
     router.refresh();
   }
 
   return (
-    <div className="flex flex-col gap-9">
-      <section>
-        <h2 className="font-serif text-xl font-semibold">
-          {dict.profileAvatar}
-        </h2>
-        <ul className="mt-4 flex flex-wrap gap-3">
-          {AVATARS.map((avatar) => {
-            const selected = avatar.id === avatarId;
-            return (
-              <li key={avatar.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAvatarId(avatar.id);
-                    setStatus("idle");
-                  }}
-                  aria-pressed={selected}
-                  aria-label={avatar.label}
-                  className={cn(
-                    "flex size-[4.5rem] items-center justify-center rounded-full border-2 transition-colors duration-150",
-                    selected
-                      ? "border-primary bg-primary-soft"
-                      : "border-transparent hover:border-border-strong",
-                  )}
-                >
-                  <Avatar avatarId={avatar.id} size="md" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <section>
-        <Field
-          label={dict.profileName}
-          value={name}
-          maxLength={40}
-          error={nameError}
-          onChange={(event) => {
-            setName(event.target.value);
-            setNameError(null);
-            setStatus("idle");
-          }}
+    <div className="flex flex-col gap-6">
+      <SettingsGroup
+        icon={<UserRound className="size-6" aria-hidden />}
+        title={dict.profileTitle}
+      >
+        <SettingsRow
+          label={dict.profileAvatar}
+          stacked
+          control={
+            <ul className="flex flex-wrap gap-3">
+              {AVATARS.map((avatar) => {
+                const selected = avatar.id === avatarId;
+                return (
+                  <li key={avatar.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAvatarId(avatar.id);
+                        setStatus("idle");
+                      }}
+                      aria-pressed={selected}
+                      aria-label={avatar.label}
+                      className={cn(
+                        "flex size-[4.5rem] cursor-pointer items-center justify-center rounded-full border-2",
+                        "transition-[background-color,border-color,transform] duration-200 ease-out-soft hover:scale-105",
+                        selected
+                          ? "border-primary bg-primary-soft shadow-soft"
+                          : "border-transparent hover:border-border-strong",
+                      )}
+                    >
+                      <Avatar avatarId={avatar.id} size="md" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          }
         />
-      </section>
 
-      <section>
-        <h2 className="font-serif text-xl font-semibold">
-          {dict.profileLanguage}
-        </h2>
-        <div className="mt-4">
-          <LanguageSelector
-            value={language}
-            onChange={(next) => {
-              setLanguage(next);
-              setStatus("idle");
-            }}
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="font-serif text-xl font-semibold">
-          {dict.profileTextSize}
-        </h2>
-        <div className="mt-4">
-          <TextSizeSelector
-            value={fontScale}
-            onChange={(next) => {
-              setFontScale(next);
-              setStatus("idle");
-            }}
-            dict={dict}
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="font-serif text-xl font-semibold">
-          {dict.profileVoice}
-        </h2>
-        <p className="mt-1 text-base text-text-muted">
-          {dict.profileVoiceHelp}
-        </p>
-
-        <div className="mt-4 flex flex-col gap-3">
-          <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
-            <span className="text-lg font-semibold">{dict.profileVoiceOn}</span>
-            <input
-              type="checkbox"
-              checked={voiceEnabled}
-              onChange={(e) => {
-                setVoiceEnabled(e.target.checked);
+        <SettingsRow
+          control={
+            <Field
+              label={dict.profileName}
+              value={name}
+              maxLength={40}
+              error={nameError}
+              onChange={(event) => {
+                setName(event.target.value);
+                setNameError(null);
                 setStatus("idle");
               }}
-              className="size-6"
             />
-          </label>
+          }
+        />
+      </SettingsGroup>
 
-          {voiceEnabled ? (
-            <>
-              <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
-                <span className="text-lg font-semibold">
-                  {dict.profileAutoRead}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={autoRead}
-                  onChange={(e) => {
-                    setAutoRead(e.target.checked);
-                    setStatus("idle");
-                  }}
-                  className="size-6"
-                />
-              </label>
+      <SettingsGroup
+        icon={<Languages className="size-6" aria-hidden />}
+        title={dict.profileLanguage}
+      >
+        <SettingsRow
+          control={
+            <LanguageSelector
+              value={language}
+              onChange={(next) => {
+                setLanguage(next);
+                setStatus("idle");
+              }}
+            />
+          }
+        />
+      </SettingsGroup>
 
+      <SettingsGroup
+        icon={<Type className="size-6" aria-hidden />}
+        title={dict.profileTextSize}
+      >
+        <SettingsRow
+          control={
+            <TextSizeSelector
+              value={fontScale}
+              onChange={(next) => {
+                setFontScale(next);
+                setStatus("idle");
+              }}
+              dict={dict}
+            />
+          }
+        />
+      </SettingsGroup>
+
+      {/* Light or dark. Saved on this device rather than on the
+          account: the same person uses a bright kitchen tablet in the
+          morning and a phone in a dark room at night. */}
+      <SettingsGroup
+        icon={<MonitorCog className="size-6" aria-hidden />}
+        title={dict.profileAppearance}
+        description={dict.profileAppearanceHelp}
+      >
+        <SettingsRow
+          control={
+            <ThemeToggle
+              labels={{
+                light: dict.themeLight,
+                dark: dict.themeDark,
+                system: dict.themeSystem,
+              }}
+            />
+          }
+        />
+      </SettingsGroup>
+
+      <SettingsGroup
+        icon={<Volume2 className="size-6" aria-hidden />}
+        title={dict.profileVoice}
+        description={dict.profileVoiceHelp}
+      >
+        <SettingsRow
+          control={
+            <Switch
+              checked={voiceEnabled}
+              label={dict.profileVoiceOn}
+              onChange={(next) => {
+                setVoiceEnabled(next);
+                setStatus("idle");
+              }}
+            />
+          }
+        />
+
+        {voiceEnabled ? (
+          <SettingsRow
+            control={
+              <Switch
+                checked={autoRead}
+                label={dict.profileAutoRead}
+                onChange={(next) => {
+                  setAutoRead(next);
+                  setStatus("idle");
+                }}
+              />
+            }
+          />
+        ) : null}
+
+        {voiceEnabled ? (
+          <SettingsRow
+            label={dict.profileSpeechSpeed}
+            stacked
+            control={
               <div
                 role="radiogroup"
                 aria-label={dict.profileSpeechSpeed}
-                className="rounded-2xl border-2 border-border bg-surface px-5 py-3"
+                className="flex gap-3"
               >
-                <p className="text-lg font-semibold">
-                  {dict.profileSpeechSpeed}
-                </p>
-                <div className="mt-3 flex gap-3">
-                  {(["SLOW", "NORMAL"] as const).map((rate) => {
-                    const selected = speechRate === rate;
-                    return (
-                      <button
-                        key={rate}
-                        type="button"
-                        onClick={() => {
-                          setSpeechRate(rate);
-                          setStatus("idle");
-                        }}
-                        aria-pressed={selected}
-                        className={cn(
-                          "flex-1 rounded-xl border-2 px-4 py-2.5 text-lg font-semibold transition-colors",
-                          selected
-                            ? "border-primary bg-primary-soft"
-                            : "border-border-strong bg-surface",
-                        )}
-                      >
-                        {rate === "SLOW" ? dict.speedSlow : dict.speedNormal}
-                      </button>
-                    );
-                  })}
-                </div>
+                {(["SLOW", "NORMAL"] as const).map((rate) => {
+                  const selected = speechRate === rate;
+                  return (
+                    <button
+                      key={rate}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => {
+                        setSpeechRate(rate);
+                        setStatus("idle");
+                      }}
+                      className={cn(
+                        "min-h-[3rem] flex-1 cursor-pointer rounded-xl border-2 px-4 py-2.5 text-lg font-semibold",
+                        "transition-[background-color,border-color,box-shadow] duration-200 ease-gentle",
+                        selected
+                          ? "border-primary bg-primary-soft shadow-soft"
+                          : "border-border-strong bg-surface hover:bg-surface-alt",
+                      )}
+                    >
+                      {rate === "SLOW" ? dict.speedSlow : dict.speedNormal}
+                    </button>
+                  );
+                })}
               </div>
-            </>
-          ) : null}
-        </div>
-      </section>
+            }
+          />
+        ) : null}
+      </SettingsGroup>
 
-      <section>
-        <h2 className="font-serif text-xl font-semibold">
-          {dict.profileNotifications}
-        </h2>
-        <p className="mt-1 text-base text-text-muted">
-          {dict.profileNotificationsHelp}
-        </p>
-
-        <div className="mt-4 flex flex-col gap-3">
-          <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
-            <span className="text-lg font-semibold">
-              {dict.profileNotificationSound}
-            </span>
-            <input
-              type="checkbox"
+      <SettingsGroup
+        icon={<BellRing className="size-6" aria-hidden />}
+        title={dict.profileNotifications}
+        description={dict.profileNotificationsHelp}
+      >
+        <SettingsRow
+          control={
+            <Switch
               checked={notificationSound}
-              onChange={(e) => {
-                setNotificationSound(e.target.checked);
+              label={dict.profileNotificationSound}
+              onChange={(next) => {
+                setNotificationSound(next);
                 setStatus("idle");
               }}
-              className="size-6"
             />
-          </label>
+          }
+        />
 
-          {voiceEnabled ? (
-            <>
-              <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
-                <span className="text-lg font-semibold">
-                  {dict.profileReminderVoice}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={reminderVoice}
-                  onChange={(e) => {
-                    setReminderVoice(e.target.checked);
-                    setStatus("idle");
-                  }}
-                  className="size-6"
-                />
-              </label>
+        {voiceEnabled ? (
+          <SettingsRow
+            control={
+              <Switch
+                checked={reminderVoice}
+                label={dict.profileReminderVoice}
+                onChange={(next) => {
+                  setReminderVoice(next);
+                  setStatus("idle");
+                }}
+              />
+            }
+          />
+        ) : null}
 
-              {reminderVoice ? (
-                <label className="flex min-h-[3.5rem] cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-border bg-surface px-5 py-3">
-                  <span className="text-lg font-semibold">
-                    {dict.profileAutoReadReminders}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={autoReadReminders}
-                    onChange={(e) => {
-                      setAutoReadReminders(e.target.checked);
-                      setStatus("idle");
-                    }}
-                    className="size-6"
-                  />
-                </label>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      </section>
+        {voiceEnabled && reminderVoice ? (
+          <SettingsRow
+            control={
+              <Switch
+                checked={autoReadReminders}
+                label={dict.profileAutoReadReminders}
+                onChange={(next) => {
+                  setAutoReadReminders(next);
+                  setStatus("idle");
+                }}
+              />
+            }
+          />
+        ) : null}
+      </SettingsGroup>
 
-      <div>
+      {/* The save control follows the page down so it is reachable
+          without scrolling back up from the bottom of a long form. */}
+      <div className="sticky bottom-4 z-10">
         <Button
           fullWidth
+          size="xl"
           onClick={save}
           disabled={status === "saving"}
           icon={
@@ -340,13 +377,16 @@ export function ProfileForm({ initial }: Props) {
         </Button>
 
         {status === "error" ? (
-          <p role="alert" className="mt-3 text-center text-lg font-medium text-error">
+          <p
+            role="alert"
+            className="mt-3 rounded-xl border border-error/30 bg-error-soft px-4 py-3 text-center text-lg font-medium text-error"
+          >
             {dict.errorBody}
           </p>
         ) : null}
       </div>
 
-      <div className="border-t border-border pt-7">
+      <div className="mt-2 flex justify-center border-t border-border pt-7">
         <Button
           variant="danger"
           size="md"

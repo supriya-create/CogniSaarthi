@@ -19,3 +19,15 @@ try {
 } catch {
   // No .env — pure tests still run.
 }
+
+/**
+ * Phase 7: the research exporter refuses to run without a dedicated
+ * pseudonymisation secret, on purpose — exporting under a missing or
+ * guessable key would produce ids that are not really pseudonymous.
+ * Tests need one, and it must NOT be the real deployment's, so a
+ * throwaway is set here when .env has not supplied one.
+ */
+if (!process.env.RESEARCH_EXPORT_SECRET) {
+  process.env.RESEARCH_EXPORT_SECRET =
+    "test-only-research-export-secret-not-for-deployment";
+}

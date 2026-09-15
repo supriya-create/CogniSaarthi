@@ -1,5 +1,4 @@
 import { CaregiverShell } from "@/components/caregiver/CaregiverShell";
-import { CaregiverNav } from "@/components/caregiver/CaregiverNav";
 import {
   ReminderManager,
   type ReminderDTO,
@@ -27,7 +26,7 @@ export default async function CaregiverRemindersPage() {
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+      <CaregiverShell action={<SignOutButton />} nav>
         <EmptyState
           title="No one is connected to your account yet."
           body="Connect to a family member first, then you can set up reminders for them."
@@ -56,7 +55,7 @@ export default async function CaregiverRemindersPage() {
   }));
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav={<CaregiverNav />}>
+    <CaregiverShell action={<SignOutButton />} nav>
       <ReminderManager reminders={dtos} userName={user.name} />
     </CaregiverShell>
   );

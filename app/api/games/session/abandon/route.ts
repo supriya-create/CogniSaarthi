@@ -4,7 +4,17 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
-const schema = z.object({ sessionId: z.string().min(1) });
+/**
+ * Either identifier works. Since Phase 5 the activity starts without
+ * waiting for the server, so the client usually knows only the id it
+ * generated itself — `clientSessionId`.
+ */
+const schema = z
+  .object({
+    sessionId: z.string().min(1).optional(),
+    clientSessionId: z.string().min(1).optional(),
+  })
+  .refine((v) => v.sessionId || v.clientSessionId, "An identifier is required.");
 
 /**
  * Closes a session the person chose to stop.
@@ -28,9 +38,11 @@ export async function POST(request: Request) {
 
   // Scoped to this user and to sessions that are still open, so a
   // completed session can never be walked back to abandoned.
+  const { sessionId, clientSessionId } = parsed.data;
   await prisma.gameSession.updateMany({
     where: {
-      id: parsed.data.sessionId,
+      ...(sessionId ? { id: sessionId } : {}),
+      ...(clientSessionId ? { clientSessionId } : {}),
       userId: user.id,
       status: "IN_PROGRESS",
     },

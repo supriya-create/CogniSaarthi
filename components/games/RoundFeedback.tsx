@@ -27,7 +27,7 @@ export function RoundFeedback({
       role="status"
       aria-live="polite"
       className={cn(
-        "animate-pop inline-flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-lg font-semibold",
+        "animate-pop inline-flex items-center gap-2.5 rounded-full border-2 px-5 py-3 text-lg font-semibold shadow-lift",
         correct
           ? "border-success/30 bg-success-soft text-success"
           : "border-warning/30 bg-warning-soft text-warning",

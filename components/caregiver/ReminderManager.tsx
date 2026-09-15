@@ -196,7 +196,7 @@ export function ReminderManager({
       ) : null}
 
       {reminders.length === 0 && !draft ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-10 text-center text-text-muted">
+        <p className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface/60 px-6 py-12 text-center text-lg text-text-muted">
           No reminders yet. Add a medication time, an appointment or a daily
           routine.
         </p>
@@ -284,7 +284,7 @@ function ReminderForm({
   error: string | null;
 }) {
   return (
-    <div className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-soft">
+    <div className="mt-6 panel p-5 shadow-soft">
       <div className="flex items-center justify-between">
         <h2 className="font-serif text-xl font-semibold">
           {draft.id ? "Edit reminder" : "Add a reminder"}

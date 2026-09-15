@@ -148,7 +148,7 @@ export function MemoryActivity({
             type="button"
             onClick={() => voice.speak(prompt)}
             aria-label={dict.hearAgain}
-            className="shrink-0 rounded-xl border border-border bg-surface p-2.5 text-text-muted transition-colors hover:bg-surface-alt"
+            className="shrink-0 cursor-pointer rounded-full border border-border bg-surface p-3 text-text-muted shadow-soft transition-colors duration-200 hover:bg-surface-alt hover:text-text"
           >
             <Volume2 className="size-6" aria-hidden />
           </button>
@@ -156,7 +156,7 @@ export function MemoryActivity({
       </div>
 
       <div className="mt-4 flex justify-center">
-        <span className="flex size-56 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-alt shadow-soft">
+        <span className="flex size-56 items-center justify-center overflow-hidden rounded-3xl border-2 border-border bg-surface-alt shadow-float sm:size-64">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/api/memories/${round.memoryId}/image`}
@@ -191,12 +191,13 @@ export function MemoryActivity({
               disabled={answered}
               onClick={() => chooseOption(option.id)}
               className={cn(
-                "min-h-[4rem] rounded-2xl border-2 px-4 py-4 text-xl font-semibold transition-colors duration-150",
+                "min-h-[4.25rem] cursor-pointer rounded-2xl border-2 px-4 py-4 text-xl font-semibold",
+                "transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out-soft",
                 answered && isCorrect
-                  ? "border-success bg-success-soft"
+                  ? "border-success bg-success-soft shadow-lift"
                   : answered && isChosen
                     ? "border-error bg-error-soft"
-                    : "border-border bg-surface hover:border-border-strong hover:bg-surface-alt",
+                    : "border-border bg-surface shadow-soft hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-alt hover:shadow-lift",
               )}
             >
               {option.label}

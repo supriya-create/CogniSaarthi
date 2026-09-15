@@ -16,9 +16,13 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Caregiver section navigation. Denser than the elder nav — this is the
- * informative side of the product — but still labelled in words, never
- * bare icons.
+ * Caregiver section navigation.
+ *
+ * Denser than the elder navigation — this is the informative side of
+ * the product — but still labelled in words, never bare icons. It
+ * renders two ways from one list: a rail down the left on a laptop,
+ * and a scrollable row of pills above the content on anything
+ * narrower.
  */
 
 const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
@@ -31,33 +35,88 @@ const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/caregiver/settings", label: "Settings", Icon: Settings },
 ];
 
+function isCurrent(pathname: string, href: string) {
+  return href === "/caregiver"
+    ? pathname === "/caregiver"
+    : pathname.startsWith(href);
+}
+
+/** The left rail, shown from `lg` up. */
 export function CaregiverNav() {
   const pathname = usePathname();
 
   return (
-    <nav
-      aria-label="Caregiver sections"
-      className="border-b border-border bg-surface/70"
-    >
-      <ul className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-5 py-2">
+    <nav aria-label="Caregiver sections">
+      <ul className="flex flex-col gap-1">
         {ITEMS.map(({ href, label, Icon }) => {
-          const active =
-            href === "/caregiver"
-              ? pathname === "/caregiver"
-              : pathname.startsWith(href);
+          const active = isCurrent(pathname, href);
           return (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap transition-colors",
+                  "relative flex min-h-[2.75rem] items-center gap-3 rounded-xl py-2.5 pr-3 pl-4 text-base font-semibold",
+                  "transition-[background-color,color] duration-200 ease-gentle",
                   active
                     ? "bg-primary-soft text-primary"
                     : "text-text-muted hover:bg-surface-alt hover:text-text",
                 )}
               >
-                <Icon className="size-4" aria-hidden />
+                {/* A marker bar as well as the fill, so the current
+                    section survives a low-contrast screen. */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute top-1/2 left-0 h-6 w-1 -translate-y-1/2 rounded-full",
+                    active ? "bg-primary" : "bg-transparent",
+                  )}
+                />
+                <Icon
+                  className="size-5 shrink-0"
+                  strokeWidth={active ? 2.4 : 2}
+                  aria-hidden
+                />
+                {label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+/** The scrollable pill row, shown below `lg`. */
+export function CaregiverNavBar() {
+  const pathname = usePathname();
+
+  return (
+    <nav
+      aria-label="Caregiver sections"
+      className="scrollbar-none overflow-x-auto border-b border-border bg-surface/70 lg:hidden"
+    >
+      <ul className="mx-auto flex max-w-6xl gap-1.5 px-5 py-2.5">
+        {ITEMS.map(({ href, label, Icon }) => {
+          const active = isCurrent(pathname, href);
+          return (
+            <li key={href}>
+              <Link
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex min-h-[2.5rem] items-center gap-2 rounded-full px-3.5 py-2 text-base font-semibold whitespace-nowrap",
+                  "transition-[background-color,color,box-shadow] duration-200 ease-gentle",
+                  active
+                    ? "bg-primary-soft text-primary shadow-soft"
+                    : "text-text-muted hover:bg-surface-alt hover:text-text",
+                )}
+              >
+                <Icon
+                  className="size-4 shrink-0"
+                  strokeWidth={active ? 2.4 : 2}
+                  aria-hidden
+                />
                 {label}
               </Link>
             </li>
