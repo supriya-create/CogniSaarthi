@@ -130,6 +130,8 @@ export async function applyResults(
         await repo.markSessionSynced(operation.entityId, result.serverId ?? null);
       } else if (operation.entityType === "REMINDER_LOG") {
         await repo.markReminderLogSynced(operation.entityId);
+      } else if (operation.entityType === "MEMORY_RECALL") {
+        await repo.markMemoryRecallSynced(operation.entityId);
       }
       succeeded += 1;
       continue;
@@ -143,6 +145,11 @@ export async function applyResults(
     if (status === "FAILED" && operation.entityType === "GAME_SESSION") {
       // Keep the row, flag it, never delete the person's activity.
       await repo.markSessionFailed(operation.entityId);
+    }
+    if (status === "FAILED" && operation.entityType === "MEMORY_RECALL") {
+      // Same rule: the answer stays on the device, marked, so it is
+      // visible as unsent work rather than silently discarded.
+      await repo.markMemoryRecallFailed(operation.entityId);
     }
     failed += 1;
   }

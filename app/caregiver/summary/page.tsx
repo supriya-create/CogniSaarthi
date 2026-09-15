@@ -14,6 +14,8 @@ import { getDailySummary, getWeeklySummary } from "@/lib/summaries/queries";
 import { formatDayLabel } from "@/lib/utils/date";
 import type { Trend } from "@/lib/cognitive-performance/types";
 import { CalendarCheck, ListChecks, Bell, Repeat } from "lucide-react";
+import { getCaregiverDict } from "@/lib/i18n/caregiver";
+import { caregiverLanguage } from "@/lib/caregiver/preferences";
 import { SignOutButton } from "../SignOutButton";
 
 export const dynamic = "force-dynamic";
@@ -73,14 +75,20 @@ function TrendBadge({ trend }: { trend: Trend }) {
 
 export default async function CaregiverSummaryPage() {
   const caregiver = await requireCaregiver();
+  const language = await caregiverLanguage(caregiver.id);
+  const dict = getCaregiverDict(language);
   const user = await linkedUserFor(caregiver.id);
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav>
+      <CaregiverShell
+        action={<SignOutButton label={dict.signOut} />}
+        nav
+        language={language}
+      >
         <EmptyState
-          title="No one is connected to your account yet."
-          body="Once connected, a daily and weekly summary will appear here."
+          title={dict.notConnectedTitle}
+          body={dict.notConnectedSummary}
         />
       </CaregiverShell>
     );
@@ -93,7 +101,11 @@ export default async function CaregiverSummaryPage() {
   ]);
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav>
+    <CaregiverShell
+      action={<SignOutButton label={dict.signOut} />}
+      nav
+      language={language}
+    >
       {/* ---------------- Daily ---------------- */}
       <SectionHeading
         as="h1"

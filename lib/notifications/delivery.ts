@@ -8,14 +8,19 @@ import {
 /**
  * DELIVERY ABSTRACTION
  * -----------------------------------------------------------------
- * The one seam every future channel (browser push, email, SMS,
- * WhatsApp) would slot into. Today only IN_APP exists: an in-app
- * notification is "delivered" simply by the record existing for the UI
- * to read, so there is nothing to send and it always succeeds.
+ * The one seam every future channel (web push, email, SMS, WhatsApp)
+ * would slot into.
+ *
+ * Two channels exist. IN_APP is "delivered" simply by the record
+ * existing for the UI to read, so there is nothing to transmit and it
+ * always succeeds. BROWSER_LOCAL is shown by the device itself and is
+ * therefore NOT deliverable from the server — this function runs on
+ * both sides, and a server-side caller has no registration to show
+ * anything through. It reports that plainly instead of guessing.
  *
  * Every other channel returns `delivered: false` with a clear reason.
- * This is deliberate honesty — Cognisaarthi does not send push, email
- * or SMS in Phase 4, and this function never pretends otherwise.
+ * This is deliberate honesty — Cognisaarthi sends no push, email or
+ * SMS, and this function never pretends otherwise.
  */
 export async function deliver(
   channel: NotificationChannel,
@@ -29,6 +34,15 @@ export async function deliver(
     // so there is nothing to transmit — its existence is the delivery.
     return { channel, delivered: true };
   }
+  if (channel === "BROWSER_LOCAL") {
+    // Implemented, but only the device can perform it. The client path
+    // is `showSafeNotification` in lib/notifications/browser.ts.
+    return {
+      channel,
+      delivered: false,
+      reason: "client_side_channel",
+    };
+  }
   return {
     channel,
     delivered: false,
@@ -36,7 +50,7 @@ export async function deliver(
   };
 }
 
-/** True when a channel is actually wired up (only IN_APP in Phase 4). */
+/** True when a channel is actually wired up. */
 export function isChannelAvailable(channel: NotificationChannel): boolean {
   return IMPLEMENTED_CHANNELS.includes(channel);
 }

@@ -155,7 +155,33 @@ export interface CachedMemory {
 // Sync queue
 // ---------------------------------------------------------------
 
-export type SyncEntityType = "GAME_SESSION" | "REMINDER_LOG";
+/**
+ * One answer to one personal-recall prompt, held on this device.
+ *
+ * `clientEventId` is the idempotency key the server de-duplicates on,
+ * the same role `clientSessionId` plays for an activity — so an answer
+ * given offline can be pushed more than once without being counted
+ * more than once.
+ *
+ * Contains no memory CONTENT: the id refers to a memory the server
+ * already knows, so a recall event on a shared tablet never holds a
+ * family member's name or a description of a photograph.
+ */
+export interface LocalMemoryRecall {
+  clientEventId: string;
+  memoryId: string;
+  outcome: "RECOGNISED" | "NOT_RECOGNISED" | "SKIPPED";
+  mode: "CHOICE" | "VOICE";
+  responseTimeMs: number | null;
+  /** When the person answered, on this device (ISO). */
+  occurredAt: string;
+  syncStatus: SyncStatus;
+}
+
+export type SyncEntityType =
+  | "GAME_SESSION"
+  | "REMINDER_LOG"
+  | "MEMORY_RECALL";
 
 export type SyncOperationKind =
   | "CREATE"

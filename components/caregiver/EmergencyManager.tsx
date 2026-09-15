@@ -1,10 +1,13 @@
 "use client";
 
+import type { Language } from "@prisma/client";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
 
 /**
  * Caregiver management of the elder's emergency contacts. This creates
@@ -24,10 +27,13 @@ type Draft = { id: string | null; name: string; phone: string; relationship: str
 export function EmergencyManager({
   contacts,
   userName,
+  language,
 }: {
   contacts: EmergencyContactDTO[];
   userName: string;
+  language: Language;
 }) {
+  const dict = getCaregiverDict(language);
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -80,10 +86,10 @@ export function EmergencyManager({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-serif text-2xl font-semibold">
-            Emergency contacts
+            {dict.emergencyTitle}
           </h2>
           <p className="mt-1 text-base text-text-muted">
-            {userName} can call these from their Help screen with one tap.
+            {fill(dict.emergencyOneTap, { name: userName })}
           </p>
         </div>
         {!draft ? (

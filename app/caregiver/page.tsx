@@ -34,7 +34,9 @@ import {
 import { DataFreshness } from "@/components/caregiver/DataFreshness";
 import { SnapshotSync } from "@/components/caregiver/SnapshotSync";
 import { formatDayLabel, formatTime, greetingKey } from "@/lib/utils/date";
-import { getDict } from "@/lib/i18n/dictionaries";
+import { getDict, localeTag } from "@/lib/i18n/dictionaries";
+import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
+import { caregiverLanguage } from "@/lib/caregiver/preferences";
 import { SignOutButton } from "./SignOutButton";
 
 export const dynamic = "force-dynamic";
@@ -49,14 +51,20 @@ const SEVERITY_TONE = {
 
 export default async function CaregiverDashboard() {
   const caregiver = await requireCaregiver();
+  const language = await caregiverLanguage(caregiver.id);
+  const cg = getCaregiverDict(language);
   const overview = await getCaregiverOverview(caregiver.id);
 
   if (!overview) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav>
+      <CaregiverShell
+        action={<SignOutButton label={cg.signOut} />}
+        nav
+        language={language}
+      >
         <EmptyState
-          title="No one is connected to your account yet."
-          body="Ask your family member to open their profile in Cognisaarthi and read out the connection code, then sign up again with it."
+          title={cg.notConnectedTitle}
+          body={cg.notConnectedOverview}
         />
       </CaregiverShell>
     );
@@ -77,23 +85,31 @@ export default async function CaregiverDashboard() {
       getDailyPlan(user.id),
     ]);
 
-  const dict = getDict("EN");
+  // The greeting comes from the shared dictionary, in the CAREGIVER's
+  // language — the one bit of elder copy this page reuses.
+  const dict = getDict(language);
   const greeting = dict[greetingKey()];
+  const locale = localeTag(language);
   const attention = openAlerts.filter((a) => a.status !== "READ").slice(0, 3);
 
   const latest = sessions.find((session) => session.result !== null);
   const latestName = latest
-    ? (getDefinition(latest.gameId)?.name.EN ?? latest.game.name)
+    ? (getDefinition(latest.gameId)?.name[language] ?? latest.game.name)
     : null;
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav subject={user.name}>
+    <CaregiverShell
+      action={<SignOutButton label={cg.signOut} />}
+      nav
+      subject={user.name}
+      language={language}
+    >
       <section className="panel surface-glow relative isolate overflow-hidden p-6 sm:p-7">
         <GlowDecor className="-top-24 -right-16 size-72" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-semibold tracking-[0.12em] text-text-muted uppercase">
-              {formatDayLabel(new Date(), "en-IN")}
+              {formatDayLabel(new Date(), locale)}
             </p>
             <h1 className="mt-2 font-serif text-3xl font-semibold sm:text-4xl">
               {greeting}
@@ -101,9 +117,12 @@ export default async function CaregiverDashboard() {
             <p className="mt-2 text-lg text-text-muted">
               {user.name}
               {latest && latestName ? (
-                <> — latest activity: {latestName} ({latest.result?.score}%)</>
+                <>
+                  {" — "}
+                  {cg.latestActivity}: {latestName} ({latest.result?.score}%)
+                </>
               ) : (
-                <> — no activities recorded yet.</>
+                <> — {cg.noActivitiesYet}</>
               )}
             </p>
           </div>
@@ -113,7 +132,10 @@ export default async function CaregiverDashboard() {
 
       {/* How current these figures are — and a plain note if the
           connection drops while the page is open. */}
-      <DataFreshness label={formatTime(new Date(), "en-IN")} />
+      <DataFreshness
+        label={fill(cg.updatedAt, { time: formatTime(new Date(), locale) })}
+        offlineNotice={cg.offlineNotice}
+      />
 
       {/* Phase 7: keep a read-only copy on this device, so this page
           has something to fall back to without a connection. Renders
@@ -122,31 +144,31 @@ export default async function CaregiverDashboard() {
 
       {/* Today's overview */}
       <h2 className="mt-9 font-serif text-2xl font-semibold">
-        Today&apos;s overview
+        {cg.todaysOverview}
       </h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <SummaryTile
-          label="Activities"
+          label={cg.tileActivities}
           value={`${daily.activities.completed} / ${daily.activities.goal}`}
-          hint="Completed today"
+          hint={cg.tileActivitiesHint}
           Icon={ListChecks}
           tone="primary"
         />
         <SummaryTile
-          label="Reminders"
+          label={cg.tileReminders}
           value={
             daily.reminders.total === 0
-              ? "None due"
+              ? cg.tileRemindersNone
               : `${daily.reminders.acknowledged} / ${daily.reminders.total}`
           }
-          hint="Acknowledged today"
+          hint={cg.tileRemindersHint}
           Icon={Bell}
           tone="secondary"
         />
         <SummaryTile
-          label="Average score"
+          label={cg.tileAverageScore}
           value={overview.averageScore === null ? "—" : `${overview.averageScore}%`}
-          hint="Last 10 activities"
+          hint={cg.tileAverageScoreHint}
           Icon={Gauge}
           tone="accent"
         />
@@ -155,19 +177,19 @@ export default async function CaregiverDashboard() {
       {/* Needs attention */}
       <section className="mt-9">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-serif text-2xl font-semibold">Needs attention</h2>
+          <h2 className="font-serif text-2xl font-semibold">{cg.needsAttention}</h2>
           <Link
             href="/caregiver/alerts"
             className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-base font-semibold text-primary transition-colors hover:bg-primary-soft"
           >
-            All alerts
+            {cg.allAlerts}
             <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
         {attention.length === 0 ? (
           <p className="mt-4 flex items-center gap-3 rounded-2xl border border-success/30 bg-success-soft px-5 py-4 text-base font-medium text-success">
             <CalendarCheck className="size-5 shrink-0" aria-hidden />
-            Nothing needs your attention right now.
+            {cg.nothingNeedsAttention}
           </p>
         ) : (
           <ul className="mt-4 flex flex-col gap-2.5">
@@ -197,13 +219,13 @@ export default async function CaregiverDashboard() {
           <Images className="size-6" />
         </CardIcon>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-lg font-semibold">Memory bank</span>
+          <span className="text-lg font-semibold">{cg.memoryBank}</span>
           <span className="text-base text-text-muted">
-            Add people, places and moments for {user.name} to remember.
+            {fill(cg.memoryBankHint, { name: user.name })}
           </span>
         </span>
         <span className="inline-flex shrink-0 items-center gap-1.5 text-base font-semibold text-primary">
-          Manage
+          {cg.manage}
           <ArrowRight
             className="size-4 transition-transform duration-200 group-hover:translate-x-0.5"
             aria-hidden
@@ -211,6 +233,11 @@ export default async function CaregiverDashboard() {
         </span>
       </Link>
 
+      {/* These two panels render copy GENERATED by the deterministic
+          engine in lib/intelligence/explanations.ts, which composes
+          English sentences. They are not translated yet, and are left
+          honestly English rather than given a language prop they would
+          ignore — see `generatedCopyEnglishNote`. */}
       <CognitivePerformancePanel
         profiles={cognitiveProfile}
         userName={user.name}
@@ -223,36 +250,41 @@ export default async function CaregiverDashboard() {
         userName={user.name}
       />
 
-      <SuggestedNext plan={plan} userName={user.name} />
+      <SuggestedNext plan={plan} userName={user.name} language={language} />
 
       <section className="mt-9">
-        <h2 className="font-serif text-2xl font-semibold">Recent activities</h2>
+        <h2 className="font-serif text-2xl font-semibold">{cg.recentActivities}</h2>
         {sessions.length === 0 ? (
           <div className="mt-4">
             <EmptyState
-              title="Nothing to show yet."
-              body={`${user.name} has not started an activity. Scores will appear here as soon as they do.`}
+              title={cg.nothingToShowYet}
+              body={fill(cg.noActivityStarted, { name: user.name })}
             />
           </div>
         ) : (
           <div className="panel mt-4 overflow-x-auto p-0">
             <table className="w-full min-w-[42rem] text-left text-base">
               <caption className="sr-only">
-                Recent activities completed by {user.name}
+                {fill(cg.recentActivitiesCaption, { name: user.name })}
               </caption>
               <thead>
                 <tr className="text-sm font-semibold tracking-wide text-text-muted uppercase">
-                  <th scope="col" className="px-5 py-3">Activity</th>
-                  <th scope="col" className="px-0 py-3">Level</th>
-                  <th scope="col" className="py-3 pr-4 text-right">Score</th>
-                  <th scope="col" className="py-3 pr-4 text-right">Time</th>
-                  <th scope="col" className="py-3 pr-4">When</th>
-                  <th scope="col" className="py-3 pr-5">Status</th>
+                  <th scope="col" className="px-5 py-3">{cg.colActivity}</th>
+                  <th scope="col" className="px-0 py-3">{cg.colLevel}</th>
+                  <th scope="col" className="py-3 pr-4 text-right">{cg.colScore}</th>
+                  <th scope="col" className="py-3 pr-4 text-right">{cg.colTime}</th>
+                  <th scope="col" className="py-3 pr-4">{cg.colWhen}</th>
+                  <th scope="col" className="py-3 pr-5">{cg.colStatus}</th>
                 </tr>
               </thead>
               <tbody className="[&_td:first-child]:pl-5 [&_td:last-child]:pr-5">
                 {sessions.map((session) => (
-                  <RecentSessionRow key={session.id} session={session} />
+                  <RecentSessionRow
+                    key={session.id}
+                    session={session}
+                    locale={locale}
+                    dict={cg}
+                  />
                 ))}
               </tbody>
             </table>
@@ -260,12 +292,10 @@ export default async function CaregiverDashboard() {
         )}
       </section>
 
-      <PersonalisationExplainer />
+      <PersonalisationExplainer language={language} />
 
       <p className="mt-9 rounded-2xl border border-border bg-surface-alt/60 px-5 py-4 text-base leading-relaxed text-text-muted">
-        These scores describe how the activities went, nothing more. They are
-        not a medical measurement and should not be read as a sign of decline
-        or improvement.
+        {cg.notMedicalNotice}
       </p>
     </CaregiverShell>
   );

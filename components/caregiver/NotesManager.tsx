@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
-import type { NoteCategory } from "@prisma/client";
+import type { NoteCategory, Language } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
+import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
 
 /**
  * Caregiver notes: plain observations, kept as written. Nothing here is
@@ -45,10 +46,13 @@ type Draft = { id: string | null; body: string; category: NoteCategory };
 export function NotesManager({
   notes,
   userName,
+  language,
 }: {
   notes: NoteDTO[];
   userName: string;
+  language: Language;
 }) {
+  const dict = getCaregiverDict(language);
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -100,7 +104,7 @@ export function NotesManager({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl font-semibold">
-            Notes about {userName}
+            {fill(dict.notesTitle, { name: userName })}
           </h1>
           <p className="mt-1 text-base text-text-muted">
             Your own observations, kept exactly as you write them.

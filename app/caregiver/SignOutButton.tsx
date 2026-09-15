@@ -17,7 +17,7 @@ import { clearCaregiverSnapshots } from "@/lib/offline/caregiver-store";
  * failure part-way through leaves the account signed in with its data
  * gone rather than signed out with its data present.
  */
-export function SignOutButton() {
+export function SignOutButton({ label }: { label: string }) {
   const router = useRouter();
 
   return (
@@ -32,7 +32,7 @@ export function SignOutButton() {
         router.refresh();
       }}
     >
-      Sign out
+      {label}
     </Button>
   );
 }

@@ -6,11 +6,11 @@ import { Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import type {
   ReminderCategory,
   ReminderPriority,
-  RecurrenceType,
-} from "@prisma/client";
+  RecurrenceType, Language } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
 import { REMINDER_CATEGORY_EMOJI } from "@/lib/reminders/labels";
+import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -80,10 +80,13 @@ function emptyDraft(): Draft {
 export function ReminderManager({
   reminders,
   userName,
+  language,
 }: {
   reminders: ReminderDTO[];
   userName: string;
+  language: Language;
 }) {
+  const dict = getCaregiverDict(language);
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -167,7 +170,7 @@ export function ReminderManager({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl font-semibold">
-            {userName}&apos;s reminders
+            {fill(dict.remindersTitle, { name: userName })}
           </h1>
           <p className="mt-1 text-base text-text-muted">
             Times are set in {userName}&apos;s own timezone.

@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { BellOff, CheckCircle2, Circle, TriangleAlert } from "lucide-react";
-import type { AlertSeverity, AlertStatus } from "@prisma/client";
+import type { AlertSeverity, AlertStatus, Language } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { getCaregiverDict, type CaregiverDict } from "@/lib/i18n/caregiver";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -25,11 +26,11 @@ export interface AlertDTO {
   when: string;
 }
 
-const FILTERS: { key: string; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "unread", label: "Unread" },
-  { key: "important", label: "Important" },
-  { key: "resolved", label: "Resolved" },
+const FILTERS: { key: string; labelKey: keyof CaregiverDict }[] = [
+  { key: "all", labelKey: "filterAll" },
+  { key: "unread", labelKey: "filterUnread" },
+  { key: "important", labelKey: "filterImportant" },
+  { key: "resolved", labelKey: "filterResolved" },
 ];
 
 /**
@@ -42,7 +43,7 @@ const SEVERITY_META: Record<
   {
     Icon: typeof Circle;
     className: string;
-    label: string;
+    labelKey: keyof CaregiverDict;
     edge: string;
     tone: string;
   }
@@ -50,21 +51,21 @@ const SEVERITY_META: Record<
   IMPORTANT: {
     Icon: TriangleAlert,
     className: "text-warning",
-    label: "Important",
+    labelKey: "severityImportant",
     edge: "border-l-warning",
     tone: "border-warning/30 bg-warning-soft text-warning",
   },
   ATTENTION: {
     Icon: Circle,
     className: "text-secondary",
-    label: "Attention",
+    labelKey: "severityAttention",
     edge: "border-l-secondary",
     tone: "border-secondary/25 bg-secondary-soft text-secondary",
   },
   INFO: {
     Icon: CheckCircle2,
     className: "text-success",
-    label: "Info",
+    labelKey: "severityInfo",
     edge: "border-l-success",
     tone: "border-success/25 bg-success-soft text-success",
   },
@@ -73,10 +74,13 @@ const SEVERITY_META: Record<
 export function AlertCenter({
   alerts,
   filter,
+  language,
 }: {
   alerts: AlertDTO[];
   filter: string;
+  language: Language;
 }) {
+  const dict = getCaregiverDict(language);
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -94,7 +98,7 @@ export function AlertCenter({
   return (
     <div>
       <h1 className="font-serif text-3xl font-semibold sm:text-4xl">
-        Needs your attention
+        {dict.alertsHeading}
       </h1>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -111,7 +115,7 @@ export function AlertCenter({
                 : "border-border bg-surface text-text-muted hover:bg-surface-alt hover:text-text",
             )}
           >
-            {f.label}
+            {dict[f.labelKey]}
           </Link>
         ))}
       </div>
@@ -119,8 +123,8 @@ export function AlertCenter({
       {alerts.length === 0 ? (
         <div className="mt-6">
           <EmptyState
-            title="Nothing here right now."
-            body="That is usually good news."
+            title={dict.alertsEmptyTitle}
+            body={dict.alertsEmptyBody}
             icon={<BellOff className="size-10" aria-hidden />}
           />
         </div>
@@ -158,12 +162,12 @@ export function AlertCenter({
                           meta.tone,
                         )}
                       >
-                        {meta.label}
+                        {dict[meta.labelKey]}
                       </span>
                       {alert.status === "UNREAD" ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-sm font-semibold text-primary">
                           <span aria-hidden className="size-2 rounded-full bg-primary" />
-                          Unread
+                          {dict.statusUnread}
                         </span>
                       ) : null}
                     </span>
@@ -172,7 +176,7 @@ export function AlertCenter({
                     </span>
                     <span className="mt-1 text-sm text-text-muted">
                       {alert.when}
-                      {resolved ? " · Resolved" : ""}
+                      {resolved ? ` · ${dict.statusResolved}` : ""}
                     </span>
                   </div>
                 </div>
@@ -186,7 +190,7 @@ export function AlertCenter({
                         onClick={() => act(alert.id, "read")}
                         disabled={busy === alert.id}
                       >
-                        Mark read
+                        {dict.actionMarkRead}
                       </Button>
                     ) : null}
                     <Button
@@ -195,7 +199,7 @@ export function AlertCenter({
                       onClick={() => act(alert.id, "resolve")}
                       disabled={busy === alert.id}
                     >
-                      Resolve
+                      {dict.actionResolve}
                     </Button>
                     <Button
                       size="sm"
@@ -203,7 +207,7 @@ export function AlertCenter({
                       onClick={() => act(alert.id, "dismiss")}
                       disabled={busy === alert.id}
                     >
-                      Dismiss
+                      {dict.actionDismiss}
                     </Button>
                   </div>
                 ) : null}
@@ -214,8 +218,7 @@ export function AlertCenter({
       )}
 
       <p className="mt-10 rounded-2xl border border-border bg-surface-alt/60 px-5 py-4 text-base leading-relaxed text-text-muted">
-        These are gentle signals drawn from activity and reminders. They are
-        not a medical measurement and never a diagnosis.
+        {dict.alertsNotMedicalNotice}
       </p>
     </div>
   );

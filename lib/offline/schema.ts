@@ -8,8 +8,14 @@
  */
 
 export const DB_NAME = "cognisaarthi";
-/** v2 (Phase 7) adds `caregiverSnapshot`. Additive — see `upgrade`. */
-export const DB_VERSION = 2;
+/**
+ * v2 (Phase 7) adds `caregiverSnapshot`.
+ * v3 (Phase 8) adds `memoryRecalls`.
+ * Both additive — see `upgrade`, which only ever creates what is
+ * missing, so a device carrying queued answers keeps them across an
+ * upgrade.
+ */
+export const DB_VERSION = 3;
 
 export const STORES = {
   meta: "meta",
@@ -34,6 +40,15 @@ export const STORES = {
    * other store is scoped by the elder in `meta.userId`.
    */
   caregiverSnapshot: "caregiverSnapshot",
+  /**
+   * Phase 8 — answers to personal-recall prompts given on this device.
+   *
+   * Scoped by the elder in `meta.userId` like every other elder store,
+   * so it is cleared by the same `clearAll()` on sign-out and when a
+   * different person signs in. It holds memory IDs and outcomes, never
+   * a name or a description.
+   */
+  memoryRecalls: "memoryRecalls",
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -82,6 +97,13 @@ export const STORE_SPECS: Record<StoreName, StoreSpec> = {
     ],
   },
   [STORES.caregiverSnapshot]: { keyPath: "caregiverId" },
+  [STORES.memoryRecalls]: {
+    keyPath: "clientEventId",
+    indexes: [
+      { name: "by-sync", keyPath: "syncStatus" },
+      { name: "by-memory", keyPath: "memoryId" },
+    ],
+  },
 };
 
 /** Create anything missing. Additive only — never destructive. */

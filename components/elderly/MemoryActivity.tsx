@@ -13,17 +13,69 @@ import { getDict } from "@/lib/i18n/dictionaries";
 import { useVoice } from "@/lib/voice/useVoice";
 import { matchesAnswer } from "@/lib/voice/answers";
 import { starsFor } from "@/lib/game-engine/scoring";
+import { recordMemoryRecallLocally } from "@/lib/offline/actions";
+import type { LocalMemoryRecall } from "@/lib/offline/types";
 import type { MemoryRound } from "@/lib/memories/activity";
 import { cn } from "@/lib/utils/cn";
 
 const FEEDBACK_MS = 1500;
+
+type MemoryRecallOutcome = LocalMemoryRecall["outcome"];
+type MemoryRecallMode = LocalMemoryRecall["mode"];
+
+/**
+ * Save what happened, quietly.
+ *
+ * Fire-and-forget on purpose. This is "remembering together", not a
+ * test, so nothing about recording an answer may reach the screen —
+ * no spinner, no saved tick, and above all no error. A failure here
+ * leaves the answer queued on the device; it must never interrupt
+ * somebody looking at a photograph of their daughter.
+ *
+ * Deliberately at module scope rather than inside the component. It
+ * reads the clock, and React Compiler's purity rule is right to reject
+ * an impure call in render scope — hoisting it is the fix, not a
+ * waiver, and it makes the function independently readable besides.
+ */
+function recordRecallEvent(
+  memoryId: string,
+  outcome: MemoryRecallOutcome,
+  mode: MemoryRecallMode,
+  presentedAt: number | null,
+): void {
+  void recordMemoryRecallLocally({
+    memoryId,
+    outcome,
+    mode,
+    // Null, not zero, when we never saw the round appear — zero would
+    // read as "answered instantly".
+    responseTimeMs: presentedAt === null ? null : Date.now() - presentedAt,
+  }).catch(() => {
+    // Swallowed deliberately — see above.
+  });
+}
 
 /**
  * The elder's personal recall activity: a photo of someone or
  * somewhere they know, a simple question, and a few choices. Answering
  * by touch always works; if voice is on, they can also just say the
  * answer. It is warm and never keeps score in their face — the tone
- * is "remembering together", not a test. Results are not stored.
+ * is "remembering together", not a test.
+ *
+ * Since Phase 8 each answer IS recorded, as a MemoryRecallEvent. Two
+ * things about that matter and are enforced below:
+ *
+ *  - It is invisible. Recording is local-first and fire-and-forget:
+ *    no spinner, no confirmation, no error can reach this screen. The
+ *    moment somebody feels they are being measured while looking at a
+ *    photograph of their daughter, this activity has failed.
+ *  - It records a MOMENT, not an ability. "NOT_RECOGNISED" means one
+ *    prompt, one afternoon — never a conclusion, and nothing in the
+ *    product turns it into one.
+ *
+ * The events are the foundation the Memory Lane spaced-retrieval
+ * scheduler will read. That scheduler does not exist yet, so nothing
+ * here schedules, repeats or adapts anything.
  */
 export function MemoryActivity({
   rounds,
@@ -50,16 +102,34 @@ export function MemoryActivity({
   const answered = chosenId !== null;
   const advanceRef = useRef<number | null>(null);
 
+  /**
+   * When the current round appeared, for `responseTimeMs`. A ref, not
+   * state: nothing renders from it, and it must not cause a re-render
+   * mid-round. Set from an effect rather than during render, which
+   * would be a purity violation the compiler rejects.
+   */
+  const presentedAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    presentedAtRef.current = Date.now();
+  }, [index]);
+
   useEffect(() => {
     return () => {
       if (advanceRef.current) window.clearTimeout(advanceRef.current);
     };
   }, []);
 
-  function answer(optionId: string, correct: boolean) {
+  function answer(optionId: string, correct: boolean, mode: MemoryRecallMode) {
     if (answered || !round) return;
     setChosenId(optionId);
     if (correct) setCorrectCount((c) => c + 1);
+
+    recordRecall(
+      round.memoryId,
+      correct ? "RECOGNISED" : "NOT_RECOGNISED",
+      mode,
+    );
 
     advanceRef.current = window.setTimeout(() => {
       if (index + 1 < rounds.length) {
@@ -72,9 +142,28 @@ export function MemoryActivity({
     }, FEEDBACK_MS);
   }
 
+  /** Record against the moment this round appeared. */
+  function recordRecall(
+    memoryId: string,
+    outcome: MemoryRecallOutcome,
+    mode: MemoryRecallMode,
+  ) {
+    recordRecallEvent(memoryId, outcome, mode, presentedAtRef.current);
+  }
+
   function chooseOption(optionId: string) {
     if (!round) return;
-    answer(optionId, optionId === round.memoryId);
+    answer(optionId, optionId === round.memoryId, "CHOICE");
+  }
+
+  function quit() {
+    // Leaving mid-round is recorded as SKIPPED, never as a wrong
+    // answer. Conflating the two would turn "I'd rather stop" into
+    // "she could not remember her daughter" in the record.
+    if (round && !answered) {
+      recordRecall(round.memoryId, "SKIPPED", "CHOICE");
+    }
+    router.push("/memories");
   }
 
   function listen() {
@@ -83,7 +172,7 @@ export function MemoryActivity({
     voice.listen((transcript) => {
       setVoiceHint(null);
       if (transcript && matchesAnswer(transcript, round.acceptedAnswers)) {
-        answer(round.memoryId, true);
+        answer(round.memoryId, true, "VOICE");
       } else if (transcript) {
         // Gentle: show the words heard, let them try touch. No penalty.
         setVoiceHint(`“${transcript}”`);
@@ -139,7 +228,7 @@ export function MemoryActivity({
       dict={dict}
       round={index + 1}
       totalRounds={rounds.length}
-      onQuit={() => router.push("/memories")}
+      onQuit={quit}
     >
       <div className="flex items-start justify-between gap-3">
         <h1 className="font-serif text-2xl font-semibold">{prompt}</h1>

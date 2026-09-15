@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/Switch";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Avatar } from "@/components/elderly/Avatar";
 import { LanguageSelector } from "@/components/elderly/LanguageSelector";
+import { NotificationSetting } from "@/components/elderly/NotificationSetting";
 import { TextSizeSelector } from "@/components/elderly/TextSizeSelector";
 import { AVATARS } from "@/lib/avatars";
 import { getDict } from "@/lib/i18n/dictionaries";
@@ -354,6 +355,13 @@ export function ProfileForm({ initial }: Props) {
           />
         ) : null}
       </SettingsGroup>
+
+      {/* Device alerts sit OUTSIDE the saved form on purpose: browser
+          permission belongs to this device, not to the account, so it
+          is not something "Save changes" could apply — and a control
+          that looked like it was saved with the rest would imply the
+          setting follows the person to another tablet. It does not. */}
+      <NotificationSetting language={language} />
 
       {/* The save control follows the page down so it is reachable
           without scrolling back up from the bottom of a long form. */}

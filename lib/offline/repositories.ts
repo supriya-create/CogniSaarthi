@@ -8,6 +8,7 @@ import type {
   CachedProfile,
   CachedReminder,
   LocalGameSession,
+  LocalMemoryRecall,
   LocalReminderLog,
   OfflineSnapshot,
   SnapshotSession,
@@ -174,6 +175,60 @@ export async function markReminderLogSynced(key: string): Promise<void> {
     ...log,
     syncStatus: "SYNCED",
   } satisfies LocalReminderLog);
+}
+
+// ---------------------------------------------------------------
+// Personal memory recall
+// ---------------------------------------------------------------
+
+/**
+ * Save one recall answer the moment it is given.
+ *
+ * There is no "update" counterpart: a recall event is a fact about a
+ * moment that has passed, so it is written once and only its
+ * syncStatus ever changes.
+ */
+export async function saveMemoryRecall(
+  event: LocalMemoryRecall,
+): Promise<void> {
+  await db.put(STORES.memoryRecalls, event);
+}
+
+export async function allMemoryRecalls(): Promise<LocalMemoryRecall[]> {
+  return db.getAll<LocalMemoryRecall>(STORES.memoryRecalls);
+}
+
+export async function pendingMemoryRecalls(): Promise<LocalMemoryRecall[]> {
+  const events = await db.getAll<LocalMemoryRecall>(STORES.memoryRecalls);
+  return events.filter((e) => e.syncStatus === "PENDING");
+}
+
+export async function markMemoryRecallSynced(
+  clientEventId: string,
+): Promise<void> {
+  const event = await db.get<LocalMemoryRecall>(
+    STORES.memoryRecalls,
+    clientEventId,
+  );
+  if (!event) return;
+  await db.put(STORES.memoryRecalls, {
+    ...event,
+    syncStatus: "SYNCED",
+  } satisfies LocalMemoryRecall);
+}
+
+export async function markMemoryRecallFailed(
+  clientEventId: string,
+): Promise<void> {
+  const event = await db.get<LocalMemoryRecall>(
+    STORES.memoryRecalls,
+    clientEventId,
+  );
+  if (!event) return;
+  await db.put(STORES.memoryRecalls, {
+    ...event,
+    syncStatus: "FAILED",
+  } satisfies LocalMemoryRecall);
 }
 
 // ---------------------------------------------------------------

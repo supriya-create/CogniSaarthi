@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Prisma, ReminderLogStatus } from "@prisma/client";
+import { Prisma, type ReminderLogStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 import { summarise } from "@/lib/game-engine/scoring";
@@ -13,6 +13,7 @@ import { resolveReminderConflict } from "@/lib/offline/conflicts";
 import type { SyncOperationResult } from "@/lib/offline/types";
 import {
   gameSessionSyncPayloadSchema,
+  memoryRecallSyncPayloadSchema,
   reminderAckSyncPayloadSchema,
   type SyncOperationInput,
 } from "@/lib/validation/schemas";
@@ -56,6 +57,9 @@ export async function applySyncOperation(
     }
     if (operation.entityType === "REMINDER_LOG") {
       return await applyReminderAck(userId, operation);
+    }
+    if (operation.entityType === "MEMORY_RECALL") {
+      return await applyMemoryRecall(userId, operation);
     }
     return fail(operation.id, "unsupported_entity");
   } catch {
@@ -268,4 +272,80 @@ async function applyReminderAck(
     select: { id: true },
   });
   return ok(operation.id, created.id);
+}
+
+// ---------------------------------------------------------------
+// Personal memory recall
+// ---------------------------------------------------------------
+
+/**
+ * Record one answer to one recall prompt.
+ *
+ * A recall event is an APPEND — there is no later state to reconcile
+ * and nothing to update, so unlike a reminder acknowledgement it needs
+ * no conflict rule. Replaying it must simply do nothing, which is what
+ * the unique `clientEventId` gives us.
+ */
+async function applyMemoryRecall(
+  userId: string,
+  operation: SyncOperationInput,
+): Promise<SyncOperationResult> {
+  const parsed = memoryRecallSyncPayloadSchema.safeParse(operation.payload);
+  if (!parsed.success) return fail(operation.id, "invalid_payload");
+
+  const payload = parsed.data;
+
+  // --- Ownership: the memory must belong to THIS elder. ---
+  // Scoped by userId in the query itself rather than fetched and then
+  // compared, so there is no branch in which the wrong row is read.
+  const memory = await prisma.personalMemory.findFirst({
+    where: { id: payload.memoryId, userId },
+    select: { id: true },
+  });
+  if (!memory) return fail(operation.id, "not_found");
+
+  // --- Idempotency: a replayed push must not double-count. ---
+  const existing = await prisma.memoryRecallEvent.findUnique({
+    where: { clientEventId: payload.clientEventId },
+    select: { id: true, userId: true },
+  });
+
+  if (existing) {
+    // Another person's device must never adopt this event.
+    if (existing.userId !== userId) return fail(operation.id, "conflict");
+    // Already recorded. Report success so the device stops retrying.
+    return ok(operation.id, existing.id);
+  }
+
+  try {
+    const created = await prisma.memoryRecallEvent.create({
+      data: {
+        userId,
+        memoryId: payload.memoryId,
+        clientEventId: payload.clientEventId,
+        outcome: payload.outcome,
+        mode: payload.mode,
+        responseTimeMs: payload.responseTimeMs,
+        occurredAt: new Date(payload.occurredAt),
+      },
+      select: { id: true },
+    });
+    return ok(operation.id, created.id);
+  } catch (error) {
+    // Two tabs pushing the same event can both pass the check above
+    // and race to insert. The unique constraint is the real guarantee;
+    // losing that race means the event IS stored, so report success
+    // rather than failing an operation that achieved its purpose.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const settled = await prisma.memoryRecallEvent.findUnique({
+        where: { clientEventId: payload.clientEventId },
+        select: { id: true },
+      });
+      if (settled) return ok(operation.id, settled.id);
+    }
+    throw error;
+  }
 }

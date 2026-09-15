@@ -4,11 +4,13 @@ A warm digital companion for everyday memory and brain activities, built for
 older adults in the North Eastern Region of India — and for the family members
 who look after them.
 
-**This repository is at Phase 7.** Phases 1–6 built the foundation, adaptive
+**This repository is at Phase 8.** Phases 1–6 built the foundation, adaptive
 difficulty, localisation and voice, the caregiver ecosystem, offline-first
 support and a deterministic longitudinal layer. Phase 7 added consent, privacy
 controls, a research-export boundary and a read-only caregiver offline
-snapshot. It is not the full product, and it does not pretend to be.
+snapshot. Phase 8 added device notifications, personal-recall tracking, a
+translated caregiver dashboard and account deletion. It is not the full
+product, and it does not pretend to be.
 
 ---
 
@@ -22,7 +24,8 @@ snapshot. It is not the full product, and it does not pretend to be.
 | **Cognitive intelligence** | Deterministic, rule-based longitudinal personalisation — no model, no training |
 | **AI** | Optional architecture only. **No provider is configured**, and the app is fully functional without one |
 | **Offline** | IndexedDB replica + service worker shell + durable sync queue |
-| **Localisation** | English, Hindi and Assamese (elder interface); caregiver side is English |
+| **Localisation** | English, Hindi and Assamese on both sides. Copy that Cognisaarthi *generates* (recommendation explanations, stored alert text) is still English |
+| **Notifications** | In-app, plus device notifications shown by the service worker. No Web Push, so a fully closed browser is not reached |
 | **Privacy** | Versioned research consent, retention policy, audit log, pseudonymous export |
 | **Research** | Adapter architecture. **No external dataset is integrated** |
 
@@ -252,10 +255,15 @@ Cognisaarthi makes no claim it cannot support. Specifically:
   to the consent and privacy copy in all three languages.
 - **No research export endpoint**, because there is no role that would be
   authorised to call one.
-- **No account-deletion button.** The deletion service is implemented and
-  tested; wiring an irreversible one-tap destruction of an elderly person's
-  photographs to the profile screen needs a confirmation design this phase did
-  not do.
+- **No Web Push.** Notifications are shown by this device through the service
+  worker, so they arrive while the app is open or recently used. Reaching a
+  fully closed browser needs VAPID keys and a push service, neither of which
+  exists here — and the profile screen says so next to the switch rather than
+  letting somebody discover it by missing a reminder.
+- **No Memory Lane.** Personal-recall answers are now recorded
+  (`MemoryRecallEvent`), which is the foundation spaced retrieval will read.
+  The scheduler, the expanding intervals, the errorless-learning flow and the
+  caregiver retention timeline are the next feature and are not built.
 - **Scores are not a medical measurement**, and the caregiver dashboard says so
   in plain text at the bottom of the page.
 
@@ -265,9 +273,12 @@ Known limits worth stating:
   The server recomputes the score from that data rather than trusting a
   client-supplied number, which is right for a wellbeing app but is worth
   revisiting before this data is used for anything clinical.
-- Caregiver-facing copy is English only. The elderly interface is translated
-  because that is where it matters most; translating the dashboard is queued
-  rather than faked.
+- The caregiver dashboard is translated into Hindi and Assamese, but copy that
+  Cognisaarthi *generates* is not: recommendation explanations are composed in
+  English by `lib/intelligence/explanations.ts`, and alert text is written into
+  the database in English at the moment the alert is raised, so a historical
+  alert cannot be re-translated after the fact. The dashboard says so rather
+  than leaving a reader to assume the English paragraph is a bug.
 - The caregiver link is consented to by reading out a code. That is deliberately
   narrow, and it is a *different* consent from research consent — a linked
   caregiver has not thereby acquired authority to enter someone into a dataset.

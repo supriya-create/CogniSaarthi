@@ -1,8 +1,10 @@
 import { Lightbulb } from "lucide-react";
+import type { Language } from "@prisma/client";
 
 import { getDefinition } from "@/lib/game-engine/definitions";
 import { explainRecommendationForCaregiver } from "@/lib/intelligence/explanations";
 import type { DailyPlan } from "@/lib/intelligence/types";
+import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
 
 /**
  * What Cognisaarthi is suggesting next, and WHY.
@@ -14,13 +16,23 @@ import type { DailyPlan } from "@/lib/intelligence/types";
  *
  * The elder never sees any of this — they just see the activity.
  */
+const OPENS_AT_KEY = {
+  EASY: "suggestedOpensAtEasy",
+  MEDIUM: "suggestedOpensAtMedium",
+  HARD: "suggestedOpensAtHard",
+} as const;
+
 export function SuggestedNext({
   plan,
   userName,
+  language,
 }: {
   plan: DailyPlan;
   userName: string;
+  language: Language;
 }) {
+  const dict = getCaregiverDict(language);
+
   return (
     <section className="mt-10">
       <div className="flex items-center gap-3">
@@ -31,27 +43,25 @@ export function SuggestedNext({
           <Lightbulb className="size-5" />
         </span>
         <h2 className="font-serif text-2xl font-semibold">
-          Suggested for {userName} today
+          {fill(dict.suggestedTitle, { name: userName })}
         </h2>
       </div>
 
       {plan.gentler ? (
         <p className="mt-4 max-w-2xl rounded-2xl border border-border bg-surface-alt px-5 py-4 text-base leading-relaxed text-text-muted">
-          Today&apos;s plan is deliberately shorter — recent activities have
-          either been hard work or there has been a gap since the last one, so
-          Cognisaarthi is asking less rather than more.
+          {dict.suggestedGentler}
         </p>
       ) : null}
 
       {plan.activities.length === 0 ? (
         <p className="mt-4 rounded-2xl border border-success/30 bg-success-soft px-5 py-4 text-base font-medium text-success">
-          {userName} has completed today&apos;s suggested activities.
+          {fill(dict.suggestedAllDone, { name: userName })}
         </p>
       ) : (
         <ol className="mt-5 flex flex-col gap-3">
           {plan.activities.map((activity, index) => {
             const definition = getDefinition(activity.gameId);
-            const name = definition?.name.EN ?? activity.gameId;
+            const name = definition?.name[language] ?? activity.gameId;
             return (
               <li
                 key={activity.gameId}
@@ -69,7 +79,7 @@ export function SuggestedNext({
                     {explainRecommendationForCaregiver(activity, name)}
                   </p>
                   <p className="mt-1 text-sm text-text-muted">
-                    Opens at the {activity.difficulty.toLowerCase()} level.
+                    {dict[OPENS_AT_KEY[activity.difficulty]]}
                   </p>
                 </div>
               </li>
@@ -80,8 +90,7 @@ export function SuggestedNext({
 
       {plan.optionalExtra ? (
         <p className="mt-3 text-sm text-text-muted">
-          An optional extra activity is offered if {userName} wants to keep
-          going. It is never presented as required.
+          {fill(dict.suggestedOptionalExtra, { name: userName })}
         </p>
       ) : null}
     </section>

@@ -175,6 +175,15 @@ export const emergencyContactSchema = z.object({
 });
 
 export const caregiverPrefsSchema = z.object({
+  /**
+   * The caregiver's OWN dashboard language.
+   *
+   * Note there is no `userId` here and no way to name somebody else's
+   * preference: identity comes from the caregiver's session cookie, so
+   * this endpoint structurally cannot reach across and change the
+   * language of the elderly person they look after.
+   */
+  language: languageSchema.optional(),
   reminderNotifications: z.boolean().optional(),
   cognitiveActivityReminders: z.boolean().optional(),
   alertNotifications: z.boolean().optional(),
@@ -219,9 +228,34 @@ export const reminderAckSyncPayloadSchema = z.object({
   eventAt: isoDateString,
 });
 
+/**
+ * Phase 8 — one answer to one personal-recall prompt.
+ *
+ * Note what is NOT here: no memory title, no photograph, no caregiver
+ * id, and no score. The server already knows what the memory is; the
+ * device only reports how the moment went. `clientEventId` is the
+ * idempotency key, exactly as `clientSessionId` is for an activity.
+ */
+export const memoryRecallSyncPayloadSchema = z.object({
+  clientEventId: z.string().min(8).max(64),
+  memoryId: z.string().min(1).max(64),
+  outcome: z.enum(["RECOGNISED", "NOT_RECOGNISED", "SKIPPED"]),
+  mode: z.enum(["CHOICE", "VOICE"]),
+  /** Null rather than 0 when it was not measured. Ten minutes is a
+   *  generous ceiling that still rejects a nonsense value. */
+  responseTimeMs: z
+    .number()
+    .int()
+    .min(0)
+    .max(1000 * 60 * 10)
+    .nullable(),
+  /** When the person answered on their device, not when we heard. */
+  occurredAt: isoDateString,
+});
+
 export const syncOperationSchema = z.object({
   id: z.string().min(1).max(64),
-  entityType: z.enum(["GAME_SESSION", "REMINDER_LOG"]),
+  entityType: z.enum(["GAME_SESSION", "REMINDER_LOG", "MEMORY_RECALL"]),
   entityId: z.string().min(1).max(200),
   operation: z.enum(["CREATE", "UPDATE", "ACKNOWLEDGE", "DELETE"]),
   payload: z.unknown(),
@@ -249,6 +283,26 @@ export const researchConsentSchema = z
   .strict();
 
 export type ResearchConsentInput = z.infer<typeof researchConsentSchema>;
+
+/**
+ * Phase 8 — deleting your own account.
+ *
+ * The literal is the point. A body that merely parses is not enough
+ * for an irreversible action, so the request has to name what it is
+ * doing: a stray or replayed DELETE with an empty body is a 400, not
+ * the destruction of somebody's photographs.
+ *
+ * As with research consent, there is no `userId`. Identity comes from
+ * the elder's own session cookie, so a caregiver signed in on the same
+ * shared tablet has no way to nominate the person they look after.
+ */
+export const accountDeletionSchema = z
+  .object({
+    confirm: z.literal("DELETE_MY_ACCOUNT"),
+  })
+  .strict();
+
+export type AccountDeletionInput = z.infer<typeof accountDeletionSchema>;
 
 export type SyncOperationInput = z.infer<typeof syncOperationSchema>;
 

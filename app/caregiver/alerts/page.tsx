@@ -10,6 +10,8 @@ import {
 } from "@/lib/caregiver/alerts";
 import { formatDayLabel } from "@/lib/utils/date";
 import { localeTag } from "@/lib/i18n/dictionaries";
+import { getCaregiverDict } from "@/lib/i18n/caregiver";
+import { caregiverLanguage } from "@/lib/caregiver/preferences";
 import { SignOutButton } from "../SignOutButton";
 
 export const dynamic = "force-dynamic";
@@ -22,14 +24,20 @@ export default async function CaregiverAlertsPage({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const caregiver = await requireCaregiver();
+  const language = await caregiverLanguage(caregiver.id);
+  const dict = getCaregiverDict(language);
   const user = await linkedUserFor(caregiver.id);
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav>
+      <CaregiverShell
+        action={<SignOutButton label={dict.signOut} />}
+        nav
+        language={language}
+      >
         <EmptyState
-          title="No one is connected to your account yet."
-          body="Once you are connected, meaningful updates about their day will appear here."
+          title={dict.notConnectedTitle}
+          body={dict.notConnectedAlerts}
         />
       </CaregiverShell>
     );
@@ -57,8 +65,12 @@ export default async function CaregiverAlertsPage({
   }));
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav>
-      <AlertCenter alerts={dtos} filter={filter} />
+    <CaregiverShell
+      action={<SignOutButton label={dict.signOut} />}
+      nav
+      language={language}
+    >
+      <AlertCenter alerts={dtos} filter={filter} language={language} />
     </CaregiverShell>
   );
 }

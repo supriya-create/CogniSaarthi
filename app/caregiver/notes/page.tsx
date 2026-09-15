@@ -6,20 +6,28 @@ import { linkedUserFor } from "@/lib/caregiver/access";
 import { getNotesWithAuthors } from "@/lib/caregiver/notes";
 import { formatDayLabel } from "@/lib/utils/date";
 import { localeTag } from "@/lib/i18n/dictionaries";
+import { getCaregiverDict } from "@/lib/i18n/caregiver";
+import { caregiverLanguage } from "@/lib/caregiver/preferences";
 import { SignOutButton } from "../SignOutButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function CaregiverNotesPage() {
   const caregiver = await requireCaregiver();
+  const language = await caregiverLanguage(caregiver.id);
+  const dict = getCaregiverDict(language);
   const user = await linkedUserFor(caregiver.id);
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav>
+      <CaregiverShell
+        action={<SignOutButton label={dict.signOut} />}
+        nav
+        language={language}
+      >
         <EmptyState
-          title="No one is connected to your account yet."
-          body="Connect to a family member first, then you can keep notes about them."
+          title={dict.notConnectedTitle}
+          body={dict.notConnectedNotes}
         />
       </CaregiverShell>
     );
@@ -38,8 +46,12 @@ export default async function CaregiverNotesPage() {
   }));
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav>
-      <NotesManager notes={dtos} userName={user.name} />
+    <CaregiverShell
+      action={<SignOutButton label={dict.signOut} />}
+      nav
+      language={language}
+    >
+      <NotesManager notes={dtos} userName={user.name} language={language} />
     </CaregiverShell>
   );
 }

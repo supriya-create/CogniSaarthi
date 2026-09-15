@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { ImageIcon, Pencil, Plus, Trash2, X } from "lucide-react";
-import type { MemoryCategory, PersonalMemory } from "@prisma/client";
+import type { MemoryCategory, PersonalMemory, Language } from "@prisma/client";
 
 import { Button } from "@/components/ui/Button";
+import { getCaregiverDict, fill } from "@/lib/i18n/caregiver";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -50,10 +51,13 @@ const EMPTY: Draft = {
 export function MemoryManager({
   memories,
   userName,
+  language,
 }: {
   memories: PersonalMemory[];
   userName: string;
+  language: Language;
 }) {
+  const dict = getCaregiverDict(language);
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -129,9 +133,9 @@ export function MemoryManager({
     <section className="mt-9">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-serif text-2xl font-semibold">Memory bank</h2>
+          <h2 className="font-serif text-2xl font-semibold">{dict.memoryBank}</h2>
           <p className="mt-1 text-base text-text-muted">
-            People, places and moments {userName} may enjoy remembering.
+            {fill(dict.memoryBankSubtitle, { name: userName })}
           </p>
         </div>
         {!draft ? (

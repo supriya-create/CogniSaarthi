@@ -35,9 +35,48 @@
  *
  * Elder page HTML *is* cached, because that is what makes the app open
  * offline. It is cleared on sign-out via a CLEAR_CACHES message.
+ *
+ * ## Notifications
+ *
+ * Notifications are DISPLAYED by the page, through this worker's
+ * registration (`lib/notifications/browser.ts`), because the body text
+ * has to be localised and the dictionaries live on the page side.
+ *
+ * What the worker owns is the CLICK. That is where the security
+ * question lives: a click navigates, and a notification's `data` is
+ * the one part of it that outlives the page that created it. So the
+ * destination is resolved from the worker's OWN map below — the same
+ * principle as `cacheShell`, where the allowlist is enforced here
+ * rather than trusted from whatever asked.
+ *
+ * There is no `push` listener. Web Push needs VAPID keys and a push
+ * service, neither of which this project has, so a closed browser is
+ * not reached and no handler pretends otherwise.
  */
 
-const VERSION = "v1";
+/**
+ * Bump this whenever the CACHING RULES change, not only when the cache
+ * format does.
+ *
+ * `activate` evicts every cache whose name does not end in VERSION. So
+ * while VERSION stays the same, a cache written by an OLDER worker
+ * keeps its name, survives activation, and goes on serving documents
+ * that were stored under rules this worker no longer applies.
+ *
+ * That is not hypothetical: the rules about which pages may be cached
+ * changed across phases 5–8 while this string stayed "v1", so devices
+ * that installed an early worker can still hold page documents the
+ * current rules would never store. A stale document served against a
+ * fresh RSC stream produces a hydration mismatch and a page stuck on
+ * its loading skeleton — which is exactly what a long-lived test
+ * profile here was doing.
+ *
+ * v2 (Phase 8): notification click routing, and the eviction above.
+ * Costs one cold load per device; nothing is lost, because Cache
+ * Storage holds only the shell. The person's own data is in IndexedDB,
+ * which this never touches.
+ */
+const VERSION = "v2";
 const STATIC_CACHE = `cogni-static-${VERSION}`;
 const PAGES_CACHE = `cogni-pages-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
@@ -226,6 +265,87 @@ self.addEventListener("message", (event) => {
       ]).catch((error) => console.error("[sw] shell caching failed:", error)),
     );
   }
+});
+
+/*
+ * -----------------------------------------------------------------
+ * Notification click routing.
+ * -----------------------------------------------------------------
+ * Kept in step with NOTIFICATION_DESTINATION in
+ * lib/notifications/payloads.ts. A test asserts the two agree, because
+ * a service worker cannot import from the bundle and a silent drift
+ * here would mean a notification that opens the wrong page — or, for
+ * somebody who is already disoriented, no page at all.
+ */
+const NOTIFICATION_DESTINATIONS = {
+  REMINDER_DUE: "/reminders",
+  DAILY_ACTIVITY: "/home",
+  MEMORY_LANE_DUE: "/memories/lane",
+};
+
+/** Resolve a click destination, or null for anything unrecognised. */
+function destinationFor(kind) {
+  if (typeof kind !== "string") return null;
+  // `hasOwnProperty` via the prototype so a kind of "constructor" or
+  // "__proto__" resolves to null instead of an inherited member.
+  if (!Object.prototype.hasOwnProperty.call(NOTIFICATION_DESTINATIONS, kind)) {
+    return null;
+  }
+  return NOTIFICATION_DESTINATIONS[kind];
+}
+
+self.addEventListener("notificationclick", (event) => {
+  // Dismiss first: leaving the banner up while the tab focuses looks
+  // like the tap did nothing, and a second tap is then likely.
+  event.notification.close();
+
+  const destination = destinationFor(event.notification.data?.kind);
+  // An unrecognised notification opens NOTHING. Better a tap that does
+  // nothing visible than one that navigates somewhere arbitrary.
+  if (!destination) return;
+
+  const target = new URL(destination, self.location.origin);
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        // Reuse an open tab wherever possible. Opening a second window
+        // onto the same app is disorienting, and on a shared tablet it
+        // also multiplies the surfaces showing someone's data.
+        for (const client of clients) {
+          let clientUrl;
+          try {
+            clientUrl = new URL(client.url);
+          } catch {
+            continue;
+          }
+          if (clientUrl.origin !== self.location.origin) continue;
+
+          if (clientUrl.pathname === target.pathname) {
+            return client.focus();
+          }
+        }
+
+        // An app window is open, but elsewhere: move it rather than
+        // opening another.
+        const sameOrigin = clients.find((client) => {
+          try {
+            return new URL(client.url).origin === self.location.origin;
+          } catch {
+            return false;
+          }
+        });
+        if (sameOrigin && "navigate" in sameOrigin) {
+          return sameOrigin.navigate(target.href).then((c) => c?.focus());
+        }
+
+        return self.clients.openWindow(target.href);
+      })
+      .catch((error) => {
+        console.error("[sw] notification click failed:", error);
+      }),
+  );
 });
 
 function isCacheablePage(pathname) {

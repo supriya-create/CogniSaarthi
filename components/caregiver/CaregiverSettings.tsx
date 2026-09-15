@@ -3,40 +3,65 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Check } from "lucide-react";
+import type { Language } from "@prisma/client";
+
+import { LANGUAGES } from "@/lib/i18n/dictionaries";
+import {
+  getCaregiverDict,
+  fill,
+  type CaregiverDict,
+} from "@/lib/i18n/caregiver";
+import { cn } from "@/lib/utils/cn";
 
 /**
- * Caregiver notification preferences and the elder's reminder timezone.
- * In-app is the only delivery channel in Phase 4, so these toggles gate
- * what the caregiver is shown — they never promise push, email or SMS.
+ * The caregiver's own settings: their dashboard language, what they
+ * want shown, and the timezone the elder's reminders are scheduled in.
+ *
+ * The language control here is the caregiver's ALONE. It PATCHes
+ * /api/caregiver/preferences, whose schema has no field naming another
+ * person, and writes to `CaregiverPreference` — so it cannot reach the
+ * elder's `UserPreference` and change the interface of the person who
+ * depends on it. That separation is tested, not just intended.
+ *
+ * The timezone below IS the elder's, and is a different endpoint on
+ * purpose: it is a fact about where they live that a caregiver is
+ * expected to correct, not a preference about how anything reads.
  */
 
 export interface CaregiverPrefsDTO {
+  language: Language;
   reminderNotifications: boolean;
   cognitiveActivityReminders: boolean;
   alertNotifications: boolean;
   weeklySummary: boolean;
 }
 
-const TOGGLES: { key: keyof CaregiverPrefsDTO; label: string; help: string }[] = [
+type ToggleKey = Exclude<keyof CaregiverPrefsDTO, "language">;
+
+const TOGGLES: {
+  key: ToggleKey;
+  labelKey: keyof CaregiverDict;
+  helpKey: keyof CaregiverDict;
+}[] = [
   {
     key: "reminderNotifications",
-    label: "Reminder notifications",
-    help: "Show reminder activity for your family member.",
+    labelKey: "prefReminderNotifications",
+    helpKey: "prefReminderHelp",
   },
   {
     key: "cognitiveActivityReminders",
-    label: "Cognitive activity reminders",
-    help: "Include gentle nudges towards the daily activity.",
+    labelKey: "prefCognitiveActivityReminders",
+    helpKey: "prefActivityHelp",
   },
   {
     key: "alertNotifications",
-    label: "Alerts",
-    help: "Show meaningful updates in the alert center.",
+    labelKey: "prefAlertNotifications",
+    helpKey: "prefAlertsHelp",
   },
   {
     key: "weeklySummary",
-    label: "Weekly summary",
-    help: "Keep the Cognisaarthi weekly summary switched on.",
+    labelKey: "prefWeeklySummary",
+    helpKey: "prefWeeklyHelp",
   },
 ];
 
@@ -64,8 +89,23 @@ export function CaregiverSettings({
   const [state, setState] = useState(prefs);
   const [zone, setZone] = useState(timeZone);
   const [saved, setSaved] = useState<string | null>(null);
+  const dict = getCaregiverDict(state.language);
 
-  async function updatePref(key: keyof CaregiverPrefsDTO, value: boolean) {
+  async function updateLanguage(next: Language) {
+    setState((s) => ({ ...s, language: next }));
+    await fetch("/api/caregiver/preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      // Only `language`. There is no field here, and none in the
+      // schema, that could name the elder instead.
+      body: JSON.stringify({ language: next }),
+    });
+    setSaved("language");
+    setTimeout(() => setSaved(null), 1800);
+    router.refresh();
+  }
+
+  async function updatePref(key: ToggleKey, value: boolean) {
     setState((s) => ({ ...s, [key]: value }));
     await fetch("/api/caregiver/preferences", {
       method: "PATCH",
@@ -96,10 +136,50 @@ export function CaregiverSettings({
   return (
     <div className="flex flex-col gap-10">
       <section>
-        <h2 className="font-serif text-2xl font-semibold">Notifications</h2>
-        <p className="mt-1 text-base text-text-muted">
-          These control what you see in Cognisaarthi. All updates are in-app —
-          Cognisaarthi does not send push, email or SMS in this version.
+        <h2 className="font-serif text-2xl font-semibold">
+          {dict.settingsLanguage}
+        </h2>
+        <p className="mt-1 max-w-2xl text-base text-text-muted">
+          {fill(dict.languageChangesOnlyYours, { name: userName })}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {LANGUAGES.map(({ code, nativeLabel }) => (
+            <button
+              key={code}
+              type="button"
+              lang={code.toLowerCase()}
+              aria-pressed={state.language === code}
+              onClick={() => updateLanguage(code)}
+              className={cn(
+                "inline-flex min-h-[2.75rem] items-center gap-2 rounded-full border-2 px-5 py-2 text-base font-semibold",
+                "transition-[background-color,border-color,color] duration-200 ease-gentle",
+                state.language === code
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-border-strong bg-surface text-text-muted hover:bg-surface-alt hover:text-text",
+              )}
+            >
+              {/* A tick as well as the fill, so the current choice is
+                  not carried by colour alone. */}
+              {state.language === code ? (
+                <Check className="size-4 shrink-0" aria-hidden />
+              ) : null}
+              {nativeLabel}
+            </button>
+          ))}
+        </div>
+        {saved === "language" ? (
+          <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
+            <Check className="size-4" aria-hidden /> {dict.saved}
+          </p>
+        ) : null}
+      </section>
+
+      <section>
+        <h2 className="font-serif text-2xl font-semibold">
+          {dict.settingsNotifications}
+        </h2>
+        <p className="mt-1 max-w-2xl text-base text-text-muted">
+          {dict.settingsNotificationsInApp}
         </p>
         <div className="mt-4 flex flex-col gap-3">
           {TOGGLES.map((t) => (
@@ -108,8 +188,12 @@ export function CaregiverSettings({
               className="flex cursor-pointer items-center justify-between gap-4 panel px-5 py-3.5"
             >
               <span className="flex flex-col">
-                <span className="text-base font-semibold">{t.label}</span>
-                <span className="text-sm text-text-muted">{t.help}</span>
+                <span className="text-base font-semibold">
+                  {dict[t.labelKey]}
+                </span>
+                <span className="text-sm text-text-muted">
+                  {dict[t.helpKey]}
+                </span>
               </span>
               <input
                 type="checkbox"
@@ -122,21 +206,20 @@ export function CaregiverSettings({
         </div>
         {saved === "prefs" ? (
           <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
-            <Check className="size-4" aria-hidden /> Saved
+            <Check className="size-4" aria-hidden /> {dict.saved}
           </p>
         ) : null}
       </section>
 
       <section>
         <h2 className="font-serif text-2xl font-semibold">
-          {userName}&apos;s timezone
+          {fill(dict.settingsTimeZoneTitle, { name: userName })}
         </h2>
-        <p className="mt-1 text-base text-text-muted">
-          Reminders are scheduled in this timezone, so an 08:00 reminder stays
-          at 08:00 where {userName} is.
+        <p className="mt-1 max-w-2xl text-base text-text-muted">
+          {fill(dict.settingsTimeZoneBody, { name: userName })}
         </p>
         <label className="mt-4 flex max-w-sm flex-col gap-1.5">
-          <span className="text-sm font-semibold">Timezone</span>
+          <span className="text-sm font-semibold">{dict.settingsTimeZone}</span>
           <select
             value={zone}
             onChange={(e) => saveZone(e.target.value)}
@@ -151,7 +234,7 @@ export function CaregiverSettings({
         </label>
         {saved === "zone" ? (
           <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
-            <Check className="size-4" aria-hidden /> Saved
+            <Check className="size-4" aria-hidden /> {dict.saved}
           </p>
         ) : null}
       </section>

@@ -4,14 +4,23 @@ import type { SessionWithResult } from "@/lib/db/queries";
 import { getDefinition } from "@/lib/game-engine/definitions";
 import { formatDayLabel, formatTime } from "@/lib/utils/date";
 import { formatDuration } from "@/lib/utils/date";
+import type { CaregiverDict } from "@/lib/i18n/caregiver";
 
-const DIFFICULTY_TEXT = {
-  EASY: "Easy",
-  MEDIUM: "Medium",
-  HARD: "Hard",
+const DIFFICULTY_KEY = {
+  EASY: "difficultyEasy",
+  MEDIUM: "difficultyMedium",
+  HARD: "difficultyHard",
 } as const;
 
-export function RecentSessionRow({ session }: { session: SessionWithResult }) {
+export function RecentSessionRow({
+  session,
+  locale,
+  dict,
+}: {
+  session: SessionWithResult;
+  locale: string;
+  dict: CaregiverDict;
+}) {
   const definition = getDefinition(session.gameId);
   const completed = session.status === "COMPLETED" && session.result !== null;
 
@@ -26,7 +35,7 @@ export function RecentSessionRow({ session }: { session: SessionWithResult }) {
         </span>
       </td>
       <td className="py-3 pr-4 text-text-muted">
-        {DIFFICULTY_TEXT[session.difficulty]}
+        {dict[DIFFICULTY_KEY[session.difficulty]]}
       </td>
       <td className="py-3 pr-4 text-right font-semibold tabular-nums">
         {completed && session.result ? `${session.result.score}%` : "—"}
@@ -36,20 +45,20 @@ export function RecentSessionRow({ session }: { session: SessionWithResult }) {
       </td>
       <td className="py-3 pr-4 text-text-muted">
         <span className="whitespace-nowrap">
-          {formatDayLabel(session.startedAt, "en-IN")},{" "}
-          {formatTime(session.startedAt, "en-IN")}
+          {formatDayLabel(session.startedAt, locale)},{" "}
+          {formatTime(session.startedAt, locale)}
         </span>
       </td>
       <td className="py-3">
         {completed ? (
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
             <CircleCheck className="size-4" aria-hidden />
-            Completed
+            {dict.statusCompleted}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-text-muted">
             <CircleDashed className="size-4" aria-hidden />
-            Not finished
+            {dict.statusNotFinished}
           </span>
         )}
       </td>

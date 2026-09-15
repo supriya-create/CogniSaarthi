@@ -10,6 +10,8 @@ import { getRemindersForUser, toSchedule } from "@/lib/reminders/queries";
 import { reminderScheduleSummary } from "@/lib/reminders/labels";
 import { formatTimeMinutes } from "@/lib/reminders/recurrence";
 import { localDayOf } from "@/lib/reminders/timezone";
+import { getCaregiverDict } from "@/lib/i18n/caregiver";
+import { caregiverLanguage } from "@/lib/caregiver/preferences";
 import { SignOutButton } from "../SignOutButton";
 
 export const dynamic = "force-dynamic";
@@ -22,14 +24,20 @@ function isoDay(date: Date, timeZone: string): string {
 
 export default async function CaregiverRemindersPage() {
   const caregiver = await requireCaregiver();
+  const language = await caregiverLanguage(caregiver.id);
+  const dict = getCaregiverDict(language);
   const user = await linkedUserFor(caregiver.id);
 
   if (!user) {
     return (
-      <CaregiverShell action={<SignOutButton />} nav>
+      <CaregiverShell
+        action={<SignOutButton label={dict.signOut} />}
+        nav
+        language={language}
+      >
         <EmptyState
-          title="No one is connected to your account yet."
-          body="Connect to a family member first, then you can set up reminders for them."
+          title={dict.notConnectedTitle}
+          body={dict.notConnectedReminders}
         />
       </CaregiverShell>
     );
@@ -55,8 +63,16 @@ export default async function CaregiverRemindersPage() {
   }));
 
   return (
-    <CaregiverShell action={<SignOutButton />} nav>
-      <ReminderManager reminders={dtos} userName={user.name} />
+    <CaregiverShell
+      action={<SignOutButton label={dict.signOut} />}
+      nav
+      language={language}
+    >
+      <ReminderManager
+        reminders={dtos}
+        userName={user.name}
+        language={language}
+      />
     </CaregiverShell>
   );
 }

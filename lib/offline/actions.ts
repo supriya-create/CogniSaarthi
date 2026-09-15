@@ -7,6 +7,7 @@ import { newId, occurrenceKey, toIso } from "@/lib/offline/serialization";
 import { syncNow } from "@/lib/offline/sync";
 import type {
   LocalGameSession,
+  LocalMemoryRecall,
   LocalReminderLog,
   LocalRound,
 } from "@/lib/offline/types";
@@ -110,6 +111,59 @@ export async function wipeLocalDataOnSignOut(): Promise<void> {
       // No worker registered — nothing cached to clear.
     }
   }
+}
+
+/**
+ * Record one answer to a personal-recall prompt.
+ *
+ * Local first, like everything else here: the event is written to this
+ * device and queued, and the activity carries on without waiting. The
+ * person is never shown a spinner, an error, or any indication that
+ * this was recorded at all — it is not a test and must not feel like
+ * one.
+ *
+ * The `clientEventId` is generated here and is what makes a replayed
+ * push harmless. Without it a patchy connection would inflate the
+ * record of how often somebody was asked, which is precisely the
+ * signal Memory Lane will later depend on.
+ */
+export async function recordMemoryRecallLocally(input: {
+  memoryId: string;
+  outcome: LocalMemoryRecall["outcome"];
+  mode: LocalMemoryRecall["mode"];
+  responseTimeMs: number | null;
+}): Promise<LocalMemoryRecall> {
+  const now = new Date();
+
+  const event: LocalMemoryRecall = {
+    clientEventId: newId(),
+    memoryId: input.memoryId,
+    outcome: input.outcome,
+    mode: input.mode,
+    responseTimeMs: input.responseTimeMs,
+    occurredAt: now.toISOString(),
+    syncStatus: "PENDING",
+  };
+
+  await repo.saveMemoryRecall(event);
+
+  await queue.enqueue({
+    entityType: "MEMORY_RECALL",
+    entityId: event.clientEventId,
+    operation: "CREATE",
+    payload: {
+      clientEventId: event.clientEventId,
+      memoryId: event.memoryId,
+      outcome: event.outcome,
+      mode: event.mode,
+      responseTimeMs: event.responseTimeMs,
+      occurredAt: event.occurredAt,
+    },
+  });
+
+  void syncNow({ pull: false });
+
+  return event;
 }
 
 function statusFor(action: AcknowledgeAction): ReminderLogStatus {

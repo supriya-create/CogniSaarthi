@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
+import { ReminderNotifier } from "@/components/elderly/ReminderNotifier";
 import { ThemeScript } from "@/components/ui/ThemeScript";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDict, localeTag } from "@/lib/i18n/dictionaries";
@@ -104,6 +105,11 @@ export default async function RootLayout({
         {/* Registers the offline shell, scopes the local store to this
             elder, and shows the calm connection notice when it matters. */}
         <OfflineProvider userId={user?.id ?? null} language={language} />
+        {/* Shows a device notification when a reminder comes due.
+            Reads the local replica, so it works offline; renders
+            nothing, and does nothing at all until the person has
+            turned alerts on from their profile. */}
+        <ReminderNotifier userId={user?.id ?? null} language={language} />
         {children}
       </body>
     </html>

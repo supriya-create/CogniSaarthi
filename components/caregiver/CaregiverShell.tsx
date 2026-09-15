@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import type { Language } from "@prisma/client";
 
 import { CaregiverNav, CaregiverNavBar } from "@/components/caregiver/CaregiverNav";
 import { Wordmark } from "@/components/ui/Logo";
+import { getCaregiverDict } from "@/lib/i18n/caregiver";
 
 /**
  * Layout for the caregiver side.
@@ -17,9 +19,10 @@ import { Wordmark } from "@/components/ui/Logo";
  * rail collapses into a scrollable row of pills, because a fixed
  * sidebar on a phone is just a column of wasted width.
  *
- * Phase 1 note: caregiver copy is English only. The elderly interface
- * is translated because that is where it matters most; translating
- * this side is queued rather than faked.
+ * Phase 8: this side is translated too. The `language` comes from the
+ * CAREGIVER's own preference, never from the elder they look after —
+ * two different people who may read two different languages, and a
+ * caregiver must not be able to change what the elderly person sees.
  */
 export function CaregiverShell({
   children,
@@ -27,13 +30,20 @@ export function CaregiverShell({
   nav,
   /** Shown under the wordmark in the rail, e.g. the elder's name. */
   subject,
+  /** The caregiver's own reading language. Defaults to English so the
+      sign-in and sign-up screens, which have no caregiver yet, still
+      render without a special case. */
+  language = "EN",
 }: {
   children: ReactNode;
   action?: ReactNode;
   /** Shows the section navigation. Off on sign-in and sign-up. */
   nav?: boolean;
   subject?: string;
+  language?: Language;
 }) {
+  const dict = getCaregiverDict(language);
+
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur-xl lg:hidden">
@@ -43,7 +53,7 @@ export function CaregiverShell({
           </Link>
           <div className="flex items-center gap-3">{action}</div>
         </div>
-        {nav ? <CaregiverNavBar /> : null}
+        {nav ? <CaregiverNavBar language={language} /> : null}
       </header>
 
       <div className="mx-auto flex w-full max-w-7xl flex-1">
@@ -53,7 +63,7 @@ export function CaregiverShell({
               <Wordmark size="sm" />
             </Link>
             <p className="mt-1.5 px-2 text-sm font-semibold tracking-[0.1em] text-text-muted uppercase">
-              Caregiver
+              {dict.caregiverLabel}
             </p>
             {subject ? (
               <p className="mt-4 truncate rounded-xl border border-border bg-surface px-3 py-2.5 text-base font-semibold">
@@ -62,7 +72,7 @@ export function CaregiverShell({
             ) : null}
 
             <div className="mt-6 flex-1">
-              <CaregiverNav />
+              <CaregiverNav language={language} />
             </div>
 
             <div className="mt-6 border-t border-border pt-5">{action}</div>

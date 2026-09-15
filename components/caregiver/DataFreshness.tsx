@@ -22,7 +22,15 @@ import { useConnection } from "@/lib/offline/useOffline";
  * `label` is formatted on the server so the text is identical on both
  * renders — no hydration mismatch, and no clock-drift guessing.
  */
-export function DataFreshness({ label }: { label: string }) {
+export function DataFreshness({
+  label,
+  offlineNotice,
+  savedViewLabel = "Open the saved view",
+}: {
+  label: string;
+  offlineNotice: string;
+  savedViewLabel?: string;
+}) {
   const connection = useConnection();
   const offline = connection === "OFFLINE";
 
@@ -39,18 +47,18 @@ export function DataFreshness({ label }: { label: string }) {
       {offline ? (
         <>
           <CloudOff className="size-4 shrink-0" aria-hidden />
-          You&apos;re offline. Showing the information from {label}.
+          {offlineNotice}
           <Link
             href="/caregiver/offline"
             className="font-semibold underline underline-offset-2"
           >
-            Open the saved view
+            {savedViewLabel}
           </Link>
         </>
       ) : (
         <>
           <RefreshCw className="size-4 shrink-0" aria-hidden />
-          Updated {label}
+          {label}
         </>
       )}
     </p>

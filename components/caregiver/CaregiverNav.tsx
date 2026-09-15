@@ -12,7 +12,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { Language } from "@prisma/client";
 
+import { getCaregiverDict, type CaregiverDict } from "@/lib/i18n/caregiver";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -25,14 +27,20 @@ import { cn } from "@/lib/utils/cn";
  * narrower.
  */
 
-const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
-  { href: "/caregiver", label: "Overview", Icon: Home },
-  { href: "/caregiver/reminders", label: "Reminders", Icon: Bell },
-  { href: "/caregiver/alerts", label: "Alerts", Icon: BellRing },
-  { href: "/caregiver/notes", label: "Notes", Icon: NotebookPen },
-  { href: "/caregiver/summary", label: "Summary", Icon: TrendingUp },
-  { href: "/caregiver/memories", label: "Memories", Icon: Images },
-  { href: "/caregiver/settings", label: "Settings", Icon: Settings },
+/** Labels are keys, resolved per render, so the rail follows the
+    caregiver's own language choice. */
+const ITEMS: {
+  href: string;
+  labelKey: keyof CaregiverDict;
+  Icon: LucideIcon;
+}[] = [
+  { href: "/caregiver", labelKey: "navOverview", Icon: Home },
+  { href: "/caregiver/reminders", labelKey: "navReminders", Icon: Bell },
+  { href: "/caregiver/alerts", labelKey: "navAlerts", Icon: BellRing },
+  { href: "/caregiver/notes", labelKey: "navNotes", Icon: NotebookPen },
+  { href: "/caregiver/summary", labelKey: "navSummary", Icon: TrendingUp },
+  { href: "/caregiver/memories", labelKey: "navMemories", Icon: Images },
+  { href: "/caregiver/settings", labelKey: "navSettings", Icon: Settings },
 ];
 
 function isCurrent(pathname: string, href: string) {
@@ -42,13 +50,14 @@ function isCurrent(pathname: string, href: string) {
 }
 
 /** The left rail, shown from `lg` up. */
-export function CaregiverNav() {
+export function CaregiverNav({ language }: { language: Language }) {
   const pathname = usePathname();
+  const dict = getCaregiverDict(language);
 
   return (
-    <nav aria-label="Caregiver sections">
+    <nav aria-label={dict.navSections}>
       <ul className="flex flex-col gap-1">
-        {ITEMS.map(({ href, label, Icon }) => {
+        {ITEMS.map(({ href, labelKey, Icon }) => {
           const active = isCurrent(pathname, href);
           return (
             <li key={href}>
@@ -77,7 +86,7 @@ export function CaregiverNav() {
                   strokeWidth={active ? 2.4 : 2}
                   aria-hidden
                 />
-                {label}
+                {dict[labelKey]}
               </Link>
             </li>
           );
@@ -88,16 +97,17 @@ export function CaregiverNav() {
 }
 
 /** The scrollable pill row, shown below `lg`. */
-export function CaregiverNavBar() {
+export function CaregiverNavBar({ language }: { language: Language }) {
   const pathname = usePathname();
+  const dict = getCaregiverDict(language);
 
   return (
     <nav
-      aria-label="Caregiver sections"
+      aria-label={dict.navSections}
       className="scrollbar-none overflow-x-auto border-b border-border bg-surface/70 lg:hidden"
     >
       <ul className="mx-auto flex max-w-6xl gap-1.5 px-5 py-2.5">
-        {ITEMS.map(({ href, label, Icon }) => {
+        {ITEMS.map(({ href, labelKey, Icon }) => {
           const active = isCurrent(pathname, href);
           return (
             <li key={href}>
@@ -117,7 +127,7 @@ export function CaregiverNavBar() {
                   strokeWidth={active ? 2.4 : 2}
                   aria-hidden
                 />
-                {label}
+                {dict[labelKey]}
               </Link>
             </li>
           );

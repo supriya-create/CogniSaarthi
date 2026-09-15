@@ -6,6 +6,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { CardIcon } from "@/components/ui/Card";
 import { GlowDecor } from "@/components/ui/Decor";
 import { ResearchConsentCard } from "@/components/elderly/ResearchConsentCard";
+import { DeleteAccountCard } from "@/components/elderly/DeleteAccountCard";
 import { requireUser } from "@/lib/auth/current-user";
 import { getDict, localeTag } from "@/lib/i18n/dictionaries";
 import { getConsentStatus } from "@/lib/privacy/server";
@@ -101,6 +102,11 @@ export default async function PrivacyPage() {
       <p className="mt-8 rounded-2xl border border-border bg-surface-alt/60 px-5 py-4 text-base leading-relaxed text-text-muted">
         {dict.privacyNotMedical}
       </p>
+
+      {/* Last on the page, deliberately: somebody scrolling to read
+          what Cognisaarthi keeps should not meet the delete control
+          before the explanation. It deletes nothing until asked twice. */}
+      <DeleteAccountCard language={language} />
     </PageShell>
   );
 }

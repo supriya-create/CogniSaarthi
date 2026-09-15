@@ -277,6 +277,51 @@ const en = {
   profileAutoReadReminders: "Read reminders without tapping",
   profileNotificationSound: "Notification sound",
 
+  // --- Phase 8: device notifications ---
+  //
+  // The BODY strings are what appears on a lock screen, so they say
+  // only that something is waiting — never what it is. See the note at
+  // the top of lib/notifications/payloads.ts.
+  notifyReminderReady: "Your reminder is ready.",
+  notifyActivityWaiting: "An activity is waiting for you.",
+  notifyMemoryLaneReady: "Your Cognisaarthi activity is ready.",
+
+  notifyTitle: "Alerts on this device",
+  notifyHelp:
+    "Cognisaarthi can show a gentle note on this device when something is waiting. The note never says what it is — you open the app to see.",
+  notifyEnable: "Turn on alerts",
+  notifyEnabled: "Alerts are on for this device",
+  notifyAsking: "Waiting for your answer…",
+  notifyTest: "Show me one now",
+  notifyTestSent: "Sent. Look at the top of your screen.",
+  notifyTestFailed: "That did not work on this device.",
+  notifyDenied:
+    "This device has blocked alerts for Cognisaarthi. You can allow them again in your browser settings, then come back here.",
+  notifyUnsupportedBrowser: "This browser cannot show alerts.",
+  notifyUnsupportedInsecure:
+    "Alerts need a secure (https) connection, so they are off here.",
+  notifyOnlyWhenOpen:
+    "These alerts come from this device, so they arrive while Cognisaarthi is open or recently used. They cannot reach you once the browser is fully closed.",
+
+  // --- Phase 8: deleting an account ---
+  deleteTitle: "Delete my account",
+  deleteIntro:
+    "You can remove yourself from Cognisaarthi completely. Please read what this does first.",
+  deleteStart: "Delete my account",
+  deleteConfirmHeading: "Are you sure?",
+  deleteWhatGoes: "This will permanently remove:",
+  deleteGoesMemories: "Your photographs and memories.",
+  deleteGoesActivities: "Your activities and everything you have done.",
+  deleteGoesReminders: "Your reminders and your daily routine.",
+  deleteGoesContacts: "Your help contacts, and your family's access.",
+  deleteCannotUndo: "This cannot be undone. Nothing can be brought back.",
+  deleteKeepAccount: "No, keep my account",
+  deleteConfirm: "Yes, delete everything",
+  deleteWorking: "Deleting…",
+  deleteFailed: "We could not delete your account. Please try again.",
+  deleteDone: "Your account has been deleted.",
+
+
   // --- Phase 6: gentle progress & personalised plan ---
   progressBuildingRoutine: "You are building a regular routine.",
   progressWeekCount: "You have done {count} activities this week.",
@@ -574,6 +619,45 @@ const hi: Partial<Dict> = {
   profileAutoReadReminders: "बिना छुए याद दिलानी पढ़ें",
   profileNotificationSound: "सूचना ध्वनि",
 
+  notifyReminderReady: "आपकी याद दिलाने वाली बात तैयार है।",
+  notifyActivityWaiting: "एक गतिविधि आपका इंतज़ार कर रही है।",
+  notifyMemoryLaneReady: "आपकी कॉग्निसारथी गतिविधि तैयार है।",
+
+  notifyTitle: "इस डिवाइस पर सूचनाएँ",
+  notifyHelp:
+    "जब कुछ आपका इंतज़ार कर रहा हो, कॉग्निसारथी इस डिवाइस पर एक हल्की सी सूचना दिखा सकता है। उस सूचना में कभी नहीं लिखा होता कि बात क्या है — देखने के लिए आप ऐप खोलिए।",
+  notifyEnable: "सूचनाएँ चालू करें",
+  notifyEnabled: "इस डिवाइस पर सूचनाएँ चालू हैं",
+  notifyAsking: "आपके उत्तर की प्रतीक्षा है…",
+  notifyTest: "अभी एक दिखाइए",
+  notifyTestSent: "भेज दी गई। अपनी स्क्रीन के ऊपर देखिए।",
+  notifyTestFailed: "इस डिवाइस पर यह काम नहीं कर पाया।",
+  notifyDenied:
+    "इस डिवाइस ने कॉग्निसारथी की सूचनाएँ रोक रखी हैं। आप अपने ब्राउज़र की सेटिंग में उन्हें फिर से अनुमति दे सकते हैं, फिर यहाँ लौट आइए।",
+  notifyUnsupportedBrowser: "यह ब्राउज़र सूचनाएँ नहीं दिखा सकता।",
+  notifyUnsupportedInsecure:
+    "सूचनाओं के लिए सुरक्षित (https) कनेक्शन चाहिए, इसलिए यहाँ वे बंद हैं।",
+  notifyOnlyWhenOpen:
+    "ये सूचनाएँ इसी डिवाइस से आती हैं, इसलिए ये तब पहुँचती हैं जब कॉग्निसारथी खुला हो या अभी-अभी इस्तेमाल हुआ हो। ब्राउज़र पूरी तरह बंद होने पर ये आप तक नहीं पहुँच सकतीं।",
+
+  deleteTitle: "मेरा खाता मिटाएँ",
+  deleteIntro:
+    "आप ख़ुद को कॉग्निसारथी से पूरी तरह हटा सकते हैं। पहले कृपया पढ़िए कि इससे क्या होता है।",
+  deleteStart: "मेरा खाता मिटाएँ",
+  deleteConfirmHeading: "क्या आप निश्चित हैं?",
+  deleteWhatGoes: "इससे हमेशा के लिए हट जाएगा:",
+  deleteGoesMemories: "आपकी तस्वीरें और यादें।",
+  deleteGoesActivities: "आपकी गतिविधियाँ और आपने जो कुछ किया है।",
+  deleteGoesReminders: "आपकी याद दिलाने वाली बातें और आपकी दिनचर्या।",
+  deleteGoesContacts: "आपके सहायता संपर्क, और आपके परिवार की पहुँच।",
+  deleteCannotUndo: "इसे वापस नहीं लाया जा सकता। कुछ भी दोबारा नहीं मिलेगा।",
+  deleteKeepAccount: "नहीं, मेरा खाता रहने दीजिए",
+  deleteConfirm: "हाँ, सब कुछ मिटा दीजिए",
+  deleteWorking: "मिटाया जा रहा है…",
+  deleteFailed: "हम आपका खाता नहीं मिटा सके। कृपया फिर से कोशिश करें।",
+  deleteDone: "आपका खाता मिटा दिया गया है।",
+
+
   progressBuildingRoutine: "आप एक नियमित दिनचर्या बना रहे हैं।",
   progressWeekCount: "आपने इस हफ़्ते {count} गतिविधियाँ की हैं।",
   progressWelcomeBack: "वापस आने पर स्वागत है। आज आराम से शुरू करते हैं।",
@@ -863,6 +947,44 @@ const as: Partial<Dict> = {
   profileReminderVoice: "মনত পেলোৱা মাতি শুনাওক",
   profileAutoReadReminders: "টিপ নিদিয়াকৈ মনত পেলোৱা পঢ়ক",
   profileNotificationSound: "জাননীৰ শব্দ",
+
+  notifyReminderReady: "আপোনাৰ মনত পেলোৱাটো সাজু হৈ আছে।",
+  notifyActivityWaiting: "এটা কাম আপোনালৈ বাট চাই আছে।",
+  notifyMemoryLaneReady: "আপোনাৰ কগনিসাৰথী কামটো সাজু হৈ আছে।",
+
+  notifyTitle: "এই ডিভাইচত জাননী",
+  notifyHelp:
+    "কিবা এটা আপোনালৈ বাট চাই থাকিলে কগনিসাৰথীয়ে এই ডিভাইচত এটা মৃদু জাননী দেখুৱাব পাৰে। সেই জাননীত কেতিয়াও নালিখে সেইটো কি — চাবলৈ আপুনি এপটো খোলক।",
+  notifyEnable: "জাননী চালু কৰক",
+  notifyEnabled: "এই ডিভাইচত জাননী চালু আছে",
+  notifyAsking: "আপোনাৰ উত্তৰলৈ বাট চাই আছোঁ…",
+  notifyTest: "এতিয়াই এটা দেখুৱাওক",
+  notifyTestSent: "পঠিয়াই দিয়া হ'ল। আপোনাৰ স্ক্ৰীনৰ ওপৰত চাওক।",
+  notifyTestFailed: "এই ডিভাইচত এইটোৱে কাম নকৰিলে।",
+  notifyDenied:
+    "এই ডিভাইচে কগনিসাৰথীৰ জাননী বন্ধ কৰি ৰাখিছে। আপুনি ব্ৰাউজাৰৰ ছেটিংত সেইবোৰ পুনৰ অনুমতি দিব পাৰে, তাৰ পিছত ইয়ালৈ ঘূৰি আহক।",
+  notifyUnsupportedBrowser: "এই ব্ৰাউজাৰে জাননী দেখুৱাব নোৱাৰে।",
+  notifyUnsupportedInsecure:
+    "জাননীৰ বাবে এটা সুৰক্ষিত (https) সংযোগ লাগে, সেয়েহে ইয়াত সেইবোৰ বন্ধ।",
+  notifyOnlyWhenOpen:
+    "এই জাননীবোৰ এই ডিভাইচৰ পৰাই আহে, সেয়েহে কগনিসাৰথী খোলা থাকিলে বা এইমাত্ৰ ব্যৱহাৰ কৰিলেহে সেইবোৰ আহে। ব্ৰাউজাৰ সম্পূৰ্ণৰূপে বন্ধ হ'লে সেইবোৰে আপোনাক নাপাব।",
+  deleteTitle: "মোৰ একাউণ্ট মচক",
+  deleteIntro:
+    "আপুনি নিজকে কগনিসাৰথীৰ পৰা সম্পূৰ্ণৰূপে আঁতৰাব পাৰে। অনুগ্ৰহ কৰি প্ৰথমে পঢ়ক ইয়াৰ দ্বাৰা কি হয়।",
+  deleteStart: "মোৰ একাউণ্ট মচক",
+  deleteConfirmHeading: "আপুনি নিশ্চিত নে?",
+  deleteWhatGoes: "ইয়াৰ দ্বাৰা চিৰদিনৰ বাবে আঁতৰি যাব:",
+  deleteGoesMemories: "আপোনাৰ ফটো আৰু স্মৃতিবোৰ।",
+  deleteGoesActivities: "আপোনাৰ কামবোৰ আৰু আপুনি কৰা সকলো।",
+  deleteGoesReminders: "আপোনাৰ মনত পেলোৱাবোৰ আৰু আপোনাৰ দৈনন্দিন ৰুটিন।",
+  deleteGoesContacts: "আপোনাৰ সহায় সম্পৰ্কবোৰ, আৰু আপোনাৰ পৰিয়ালৰ প্ৰৱেশ।",
+  deleteCannotUndo: "ইয়াক ওভতাই অনা নাযায়। একোৱেই ঘূৰাই পোৱা নাযাব।",
+  deleteKeepAccount: "নহয়, মোৰ একাউণ্ট থাকিবলৈ দিয়ক",
+  deleteConfirm: "হয়, সকলো মচি পেলাওক",
+  deleteWorking: "মচি থকা হৈছে…",
+  deleteFailed: "আমি আপোনাৰ একাউণ্ট মচিব নোৱাৰিলোঁ। অনুগ্ৰহ কৰি আকৌ চেষ্টা কৰক।",
+  deleteDone: "আপোনাৰ একাউণ্ট মচি পেলোৱা হ'ল।",
+
 
   progressBuildingRoutine: "আপুনি এটা নিয়মীয়া অভ্যাস গঢ়ি তুলিছে।",
   progressWeekCount: "আপুনি এই সপ্তাহত {count} টা কাম কৰিছে।",

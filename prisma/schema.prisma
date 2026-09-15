@@ -227,6 +227,9 @@ model User {
   // Phase 7
   researchConsents ResearchConsent[]
 
+  // Phase 8
+  memoryRecallEvents MemoryRecallEvent[]
+
   @@index([createdAt])
 }
 
@@ -291,6 +294,8 @@ model PersonalMemory {
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  recallEvents MemoryRecallEvent[]
 
   @@index([userId, enabled])
   @@index([caregiverId])
@@ -593,11 +598,11 @@ model AuditEvent {
   action AuditAction
 
   /// The elder the event concerns, when there is one.
-  userId String?
+  userId      String?
   /// The caregiver who acted, when a caregiver acted.
   caregiverId String?
   /// Free-form, deliberately small, non-sensitive context.
-  detail Json?
+  detail      Json?
 
   createdAt DateTime @default(now())
 
@@ -612,6 +617,17 @@ model CaregiverPreference {
   id          String @id @default(cuid())
   caregiverId String @unique
 
+  /// The language the CAREGIVER reads the dashboard in.
+  ///
+  /// Deliberately stored here, on the caregiver's own record, and not
+  /// derived from the elder they look after. The two are different
+  /// people who may read different languages, and — more importantly —
+  /// a caregiver changing their own dashboard language must never
+  /// reach across and alter the interface of the elderly person who
+  /// depends on it. Keeping the field on this model makes that a
+  /// property of the schema rather than a rule to remember.
+  language Language @default(EN)
+
   reminderNotifications      Boolean @default(true)
   cognitiveActivityReminders Boolean @default(true)
   alertNotifications         Boolean @default(true)
@@ -620,4 +636,73 @@ model CaregiverPreference {
   updatedAt DateTime @updatedAt
 
   caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+}
+
+// -------------------- Phase 8: memory recall tracking --------------------
+
+/// How one personal-recall prompt was answered.
+///
+/// Deliberately three plain outcomes and nothing resembling a score.
+/// "RECOGNISED" means the person named the photograph in front of
+/// them; it is not a measurement of memory, it is a record of one
+/// moment, and `docs` and the caregiver copy both say so.
+enum MemoryRecallOutcome {
+  RECOGNISED
+  NOT_RECOGNISED
+  /// Moved on without answering. Distinct from getting it wrong —
+  /// conflating the two would quietly turn "I'd rather not" into "she
+  /// could not remember her daughter", which is a false record of a
+  /// very sensitive thing.
+  SKIPPED
+}
+
+/// How the answer arrived. Kept because the two are not comparable:
+/// speech recognition mishears, so a VOICE miss is weaker evidence
+/// than a CHOICE miss and a later analysis must be able to tell them
+/// apart rather than averaging them together.
+enum MemoryRecallMode {
+  CHOICE
+  VOICE
+}
+
+/// One answer to one personal-recall prompt.
+///
+/// This is the foundation Memory Lane (spaced retrieval) will build
+/// on, and it is deliberately the SMALLEST thing that is useful: what
+/// was shown, how it went, how it was answered, and when. No interval,
+/// no schedule, no retention state — those belong to the scheduler
+/// that does not exist yet, and inventing their columns now would be
+/// guessing at a design rather than recording a fact.
+model MemoryRecallEvent {
+  id     String @id @default(cuid())
+  userId String
+
+  /// The memory that was shown.
+  memoryId String
+
+  /// Device-generated idempotency key, exactly as GameSession uses
+  /// `clientSessionId`. An answer given offline is queued and may be
+  /// pushed more than once; unique here means a replay updates nothing
+  /// and creates nothing, so a flaky connection cannot inflate how
+  /// often somebody was asked.
+  clientEventId String @unique
+
+  outcome MemoryRecallOutcome
+  mode    MemoryRecallMode
+
+  /// How long the answer took. Null when it was not measured rather
+  /// than zero, which would read as "answered instantly".
+  responseTimeMs Int?
+
+  /// When the person actually answered, on their own device — not when
+  /// the server heard about it, which offline can be days later.
+  occurredAt DateTime
+
+  createdAt DateTime @default(now())
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memory PersonalMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([memoryId, occurredAt])
 }
